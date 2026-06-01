@@ -1,0 +1,31 @@
+name: Ingest GTFS statico
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Installa dipendenze
+        run: pnpm install --frozen-lockfile
+
+      - name: Esegui ETL
+        run: pnpm ingest:static
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
