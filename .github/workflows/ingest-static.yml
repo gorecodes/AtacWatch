@@ -25,6 +25,17 @@ jobs:
       - name: Installa dipendenze
         run: pnpm install --frozen-lockfile
 
+      - name: Verifica secret
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "ERRORE: DATABASE_URL non ricevuto da GH Secrets"
+            exit 1
+          else
+            echo "DATABASE_URL ricevuto (${#DATABASE_URL} caratteri)"
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Esegui ETL
         run: pnpm ingest:static
         env:
