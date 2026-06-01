@@ -1,0 +1,18 @@
+{
+  "name": "AtacWatch — mezzi di Roma",
+  "short_name": "AtacWatch",
+  "description": "Bus, tram e metro di Roma in tempo reale: linee, arrivi e mappa live.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAFA",
+  "theme_color": "#8A1528",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/*
+ * Palette dark "professionale": stessa scala `neutral` usata in tutta l'app,
+ * ma ricalibrata su toni slate più chiari (sfondi schiariti, testo morbido).
+ * Cambiando questi token si schiarisce l'intera UI da un punto solo.
+ */
+@theme {
+  --color-neutral-100: #eef2f7; /* testo primario */
+  --color-neutral-200: #dde4ec;
+  --color-neutral-300: #c2ccd9;
+  --color-neutral-400: #99a6b8; /* titoletti / etichette */
+  --color-neutral-500: #7e8a9c; /* testo attenuato */
+  --color-neutral-600: #6c7a8d; /* testo sottile, chevron, bordo focus */
+  --color-neutral-700: #4a5568; /* linee timeline, marker passati */
+  --color-neutral-800: #3a4555; /* bordi, stato attivo/hover */
+  --color-neutral-900: #2a3340; /* card */
+  --color-neutral-950: #1e2631; /* sfondo pagina */
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+/* Nasconde la scrollbar orizzontale nelle liste a scorrimento */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* MapLibre: assicura che il canvas riempia il contenitore */
+.maplibregl-map {
+  font: inherit;
+}

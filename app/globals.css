@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/*
+ * Palette light istituzionale — ispirata ai colori del Comune di Roma.
+ * Tutti i token sono qui: cambiare questi valori aggiorna l'intera UI.
+ */
+@theme {
+  /* Scala neutral — toni chiari per sfondo/testo istituzionale */
+  --color-neutral-50:  #FAFAFA;   /* sfondo pagina */
+  --color-neutral-100: #F3F4F6;   /* sfondo sezione, hover */
+  --color-neutral-200: #E2E6EA;   /* bordi, divisori */
+  --color-neutral-300: #C8D0D9;   /* bordi evidenti */
+  --color-neutral-400: #8C98A4;   /* testo silenzioso, placeholder */
+  --color-neutral-500: #5A6472;   /* testo secondario */
+  --color-neutral-600: #3D4A58;   /* testo corpo */
+  --color-neutral-700: #2D3848;   /* testo medio */
+  --color-neutral-800: #1A2332;   /* testo primario */
+  --color-neutral-900: #0D1520;   /* titoli */
+  --color-neutral-950: #060D18;
+
+  /* Rosso Roma — palette brand principale */
+  --color-brand-50:  #FDF2F3;
+  --color-brand-100: #FAD9DC;
+  --color-brand-200: #F3A8B0;
+  --color-brand-300: #E8707E;
+  --color-brand-400: #D63C50;
+  --color-brand-500: #BA1A2C;
+  --color-brand-600: #8A1528;   /* Rosso capitolino — colore primario */
+  --color-brand-700: #6B1020;
+  --color-brand-800: #4D0C18;
+  --color-brand-900: #2E0710;
+
+  /* Oro capitolino — accento secondario */
+  --color-gold-400: #D4A843;
+  --color-gold-500: #C4993D;
+  --color-gold-600: #A67F2E;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.maplibregl-map {
+  font: inherit;
+}
