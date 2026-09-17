@@ -17,7 +17,7 @@ export default function FavoritesPage() {
       </header>
 
       <h1 className="mb-1 text-[22px] font-bold tracking-tight text-neutral-900">Preferiti</h1>
-      <p className="mb-4 text-[13px] text-neutral-500">Trascina per riordinare, tocca la stella per rimuovere.</p>
+      <p className="mb-4 text-[13px] text-neutral-600">Trascina per riordinare · tocca la stella per rimuovere.</p>
 
       <FavoritesList />
     </div>

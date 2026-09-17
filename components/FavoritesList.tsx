@@ -42,7 +42,7 @@ function SortableRow({ stop, onRemove }: { stop: FavoriteStop; onRemove: () => v
         {...attributes}
         {...listeners}
         aria-label="Trascina per riordinare"
-        className="shrink-0 cursor-grab touch-none text-neutral-300 active:cursor-grabbing active:text-neutral-500"
+        className="shrink-0 cursor-grab touch-none text-neutral-400 active:cursor-grabbing active:text-neutral-700"
       >
         <GrabGlyph className="h-5 w-5" />
       </button>
@@ -53,7 +53,7 @@ function SortableRow({ stop, onRemove }: { stop: FavoriteStop; onRemove: () => v
       >
         <span className="name block truncate text-[15px] text-neutral-900">{stop.name}</span>
         {stop.code && (
-          <span className="text-[12px] tabular-nums text-neutral-400">palina {stop.code}</span>
+          <span className="text-[12px] tabular-nums text-neutral-500">palina {stop.code}</span>
         )}
       </Link>
 
@@ -99,7 +99,7 @@ export default function FavoritesList() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={favorites.map((f) => f.stop_id)} strategy={verticalListSortingStrategy}>
-        <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
+        <ul className="divide-y divide-neutral-300 border-y border-neutral-300">
           {favorites.map((f) => (
             <SortableRow key={f.stop_id} stop={f} onRemove={() => toggle(f)} />
           ))}
