@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import JourneyPlanner from "@/components/JourneyPlanner";
 
 export const metadata = { title: "Percorsi — Bus Roma" };
@@ -22,7 +23,12 @@ export default function PlanPage() {
         pagina della fermata.
       </p>
 
-      <JourneyPlanner />
+      {/* JourneyPlanner legge l'indirizzo per sapere quale itinerario è aperto,
+          e useSearchParams richiede un confine di sospensione su una rotta
+          statica come questa. */}
+      <Suspense fallback={<p className="text-[14px] text-neutral-500">Carico…</p>}>
+        <JourneyPlanner />
+      </Suspense>
     </div>
   );
 }

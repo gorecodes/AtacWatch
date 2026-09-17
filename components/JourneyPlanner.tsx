@@ -1,50 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import RouteBadge from "./RouteBadge";
+import { useRouter, useSearchParams } from "next/navigation";
 import PlanEndpoint, { type Endpoint } from "./PlanEndpoint";
-
-type Fermata = { stopId: string; name: string; code: string | null };
-type Leg =
-  | { kind: "walk"; from: Fermata | null; to: Fermata | null; minutes: number; meters?: number }
-  | {
-      kind: "ride";
-      tripId: string;
-      shortName: string;
-      color: string | null;
-      textColor: string | null;
-      headsign: string | null;
-      from: Fermata;
-      to: Fermata;
-      departAt: string;
-      arriveAt: string;
-      minutes: number;
-    };
-type Opzione = {
-  departAt: string;
-  arriveAt: string;
-  /** Da quando esci di casa a quando arrivi: non include l'attesa iniziale. */
-  durationMin: number;
-  /** Gli orari sono di una corsa a titolo d'esempio, non "la" partenza. */
-  esempio: boolean;
-  walkMin: number;
-  rides: number;
-  lines: string[];
-  legs: Leg[];
-};
-type Plan = {
-  options: Opzione[];
-  walkOption: { minutes: number; meters: number } | null;
-};
-
-function ora(iso: string): string {
-  return new Date(iso).toLocaleTimeString("it-IT", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Rome",
-  });
-}
+import ItineraryDetail from "./ItineraryDetail";
+import type { PianoItinerario } from "@/lib/itinerario";
 
 function params(from: Endpoint, to: Endpoint, quando: string): string {
   const p = new URLSearchParams();
@@ -68,20 +28,31 @@ function params(from: Endpoint, to: Endpoint, quando: string): string {
 }
 
 export default function JourneyPlanner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [from, setFrom] = useState<Endpoint | null>(null);
   const [to, setTo] = useState<Endpoint | null>(null);
-  const [plan, setPlan] = useState<Plan | null>(null);
+  const [plan, setPlan] = useState<PianoItinerario | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "empty" | "error">("idle");
   /** Vuoto = parto adesso. */
   const [quando, setQuando] = useState("");
-  /** 0 = il più rapido, poi le alternative nell'ordine restituito. */
-  const [scelta, setScelta] = useState(0);
+
+  /**
+   * L'itinerario aperto sta nell'INDIRIZZO e non in uno stato interno, così il
+   * tasto indietro del browser — che su Android è il gesto di sistema — riporta
+   * all'elenco invece di uscire dall'app.
+   */
+  const selRaw = searchParams.get("sel");
+  const sel = selRaw === null ? null : Number(selRaw);
+  const aperta =
+    plan && sel !== null && Number.isInteger(sel) && sel >= 0 && sel < plan.options.length
+      ? plan.options[sel]
+      : null;
 
   async function cerca() {
     if (!from || !to) return;
     setState("loading");
     setPlan(null);
-    setScelta(0);
     try {
       const res = await fetch(`/api/plan?${params(from, to, quando)}`, { cache: "no-store" });
       if (res.status === 404) {
@@ -94,6 +65,16 @@ export default function JourneyPlanner() {
     } catch {
       setState("error");
     }
+  }
+
+  if (aperta) {
+    return (
+      <ItineraryDetail
+        opzione={aperta}
+        walkOption={plan!.walkOption}
+        onBack={() => router.back()}
+      />
+    );
   }
 
   return (
@@ -112,8 +93,8 @@ export default function JourneyPlanner() {
             <span className="flex-1 text-[15px] text-neutral-900">Adesso</span>
             <button
               onClick={() => {
-                // Precompilo con l'ora attuale arrotondata: un campo vuoto
-                // costringerebbe a digitare tutto da zero.
+                // Precompilo con l'ora attuale: un campo vuoto costringerebbe
+                // a digitare tutto da zero.
                 const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
                 setQuando(d.toISOString().slice(0, 16));
               }}
@@ -163,141 +144,47 @@ export default function JourneyPlanner() {
         </p>
       )}
 
-      {plan && plan.options.length > 0 && (() => {
-        const mostrata = plan.options[Math.min(scelta, plan.options.length - 1)];
-        return (
+      {plan && plan.options.length > 0 && (
         <section className="mt-5">
-          {/* Le opzioni si mostrano tutte con i loro numeri, e sceglie chi
+          {/* Le proposte si mostrano tutte con i loro numeri, e sceglie chi
               legge: non esiste un itinerario giusto in assoluto, perché chi ha
               fretta, chi non vuole cambiare e chi non vuole camminare ne
               vogliono tre diversi. */}
-          {plan.options.length > 1 && (
-            <ul className="mb-4 divide-y divide-neutral-200 border-y border-neutral-300">
-              {plan.options.map((o, i) => (
-                <li key={i}>
-                  <button
-                    onClick={() => setScelta(i)}
-                    aria-pressed={i === scelta}
-                    className={`flex w-full items-center gap-3 py-2.5 text-left ${
-                      i === scelta ? "" : "active:bg-neutral-200/40"
-                    }`}
-                  >
-                    <span className={`w-1 self-stretch rounded-full ${i === scelta ? "bg-neutral-900" : "bg-transparent"}`} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[15px] tabular-nums text-neutral-900">
-                        <span className={i === scelta ? "font-bold" : "font-medium"}>
-                          {o.durationMin} min
-                        </span>
-                        <span className="text-neutral-500"> di viaggio</span>
-                      </span>
-                      <span className="mt-0.5 block truncate text-[13px] text-neutral-600">
-                        {o.lines.length > 0 ? o.lines.join(" › ") : "tutto a piedi"}
-                        {o.rides > 1 && ` · ${o.rides - 1} camb${o.rides === 2 ? "io" : "i"}`}
-                        {o.walkMin > 0 && ` · ${o.walkMin} min a piedi`}
-                      </span>
+          <h2 className="mb-1 text-[13px] font-semibold text-neutral-500">
+            {plan.options.length === 1 ? "Un percorso" : `${plan.options.length} percorsi`}
+          </h2>
+          <ul className="divide-y divide-neutral-200 border-y border-neutral-300">
+            {plan.options.map((o, i) => (
+              <li key={i}>
+                <button
+                  onClick={() => router.push(`/plan?sel=${i}`, { scroll: true })}
+                  className="flex w-full items-center gap-3 py-3 text-left active:bg-neutral-200/40"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] tabular-nums text-neutral-900">
+                      <span className="font-semibold">{o.durationMin} min</span>
+                      <span className="text-neutral-500"> di viaggio</span>
                     </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="flex items-baseline justify-between border-b border-neutral-300 pb-2">
-            {/* Gli orari sono di una corsa d'esempio: il percorso vale a
-                prescindere, e dirlo evita che sembrino "la" partenza. */}
-            <p className="text-[19px] font-bold tabular-nums text-neutral-900">
-              {ora(mostrata.departAt)} → {ora(mostrata.arriveAt)}
-              {mostrata.esempio && (
-                <span className="ml-1.5 align-middle text-[12px] font-normal tabular-nums text-neutral-500">
-                  es.
-                </span>
-              )}
-            </p>
-            <p className="text-right text-[13px] text-neutral-600">
-              {mostrata.durationMin} min di viaggio
-              <br />
-              {mostrata.walkMin} a piedi
-            </p>
-          </div>
-
-          <ol className="divide-y divide-neutral-200">
-            {mostrata.legs.map((leg, i) => (
-              <li key={i} className="flex gap-3 py-3">
-                {leg.kind === "walk" ? (
-                  <>
-                    <span className="w-[52px] shrink-0 text-[12px] uppercase tracking-wide text-neutral-500">
-                      a piedi
+                    <span className="mt-0.5 block truncate text-[13px] text-neutral-600">
+                      {o.lines.length > 0 ? o.lines.join(" › ") : "tutto a piedi"}
+                      {o.rides > 1 && ` · ${o.rides - 1} camb${o.rides === 2 ? "io" : "i"}`}
+                      {o.walkMin > 0 && ` · ${o.walkMin} min a piedi`}
                     </span>
-                    <span className="min-w-0 flex-1 text-[14px] leading-snug text-neutral-700">
-                      {leg.minutes} min
-                      {leg.to ? (
-                        <>
-                          {" "}fino a <span className="name text-neutral-900">{leg.to.name}</span>
-                        </>
-                      ) : leg.from ? (
-                        <>
-                          {" "}da <span className="name text-neutral-900">{leg.from.name}</span> a destinazione
-                        </>
-                      ) : (
-                        " fino a destinazione"
-                      )}
-                      {leg.meters != null && <span className="text-neutral-500"> ({leg.meters} m)</span>}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-[52px] shrink-0">
-                      <RouteBadge
-                        shortName={leg.shortName}
-                        color={leg.color}
-                        textColor={leg.textColor}
-                        size="sm"
-                      />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="name block truncate text-[14px] font-medium text-neutral-900">
-                        {leg.headsign ?? "Destinazione non indicata"}
-                      </span>
-                      <span className="mt-0.5 block text-[13px] leading-snug text-neutral-600">
-                        <Link
-                          href={`/stop/${encodeURIComponent(leg.from.stopId)}`}
-                          className="underline decoration-neutral-300 underline-offset-2"
-                        >
-                          {leg.from.name}
-                        </Link>{" "}
-                        <span className="tabular-nums text-neutral-900">{ora(leg.departAt)}</span>
-                        {" → "}
-                        <Link
-                          href={`/stop/${encodeURIComponent(leg.to.stopId)}`}
-                          className="underline decoration-neutral-300 underline-offset-2"
-                        >
-                          {leg.to.name}
-                        </Link>{" "}
-                        <span className="tabular-nums text-neutral-900">{ora(leg.arriveAt)}</span>
-                      </span>
-                    </span>
-                  </>
-                )}
+                  </span>
+                  <span className="shrink-0 text-neutral-300">›</span>
+                </button>
               </li>
             ))}
-          </ol>
+          </ul>
 
           {plan.walkOption && (
-            <p className="border-t border-neutral-200 pt-3 text-[13px] text-neutral-600">
+            <p className="mt-3 text-[13px] text-neutral-600">
               Oppure <span className="font-semibold text-neutral-900">tutto a piedi</span> in{" "}
-              {plan.walkOption.minutes} min ({(plan.walkOption.meters / 1000).toFixed(1)} km in linea
-              d&apos;aria)
-              {plan.walkOption.minutes < mostrata.durationMin && ", che è più rapido"}.
+              {plan.walkOption.minutes} min ({(plan.walkOption.meters / 1000).toFixed(1)} km).
             </p>
           )}
-
-          <p className="mt-3 text-[12px] leading-relaxed text-neutral-500">
-            Orari da tabella, senza il tempo reale: un mezzo in ritardo cambia le
-            coincidenze. Le distanze a piedi sono in linea d&apos;aria.
-          </p>
         </section>
-        );
-      })()}
+      )}
     </div>
   );
 }
