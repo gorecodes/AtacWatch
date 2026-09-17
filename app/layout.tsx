@@ -39,8 +39,20 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full flex flex-col bg-neutral-100 text-neutral-900">
         <main className="flex-1">{children}</main>
         <footer className="mx-auto w-full max-w-lg px-4 py-6 text-[11px] leading-relaxed text-neutral-400">
-          Dati di Roma Servizi per la Mobilità (ATAC, Roma TPL), licenza CC-BY-SA.
-          Gli orari in tempo reale dipendono dal feed ATAC e possono mancare.
+          <p>
+            Dati di Roma Servizi per la Mobilità (ATAC, Roma TPL), licenza CC-BY-SA.
+            Gli orari in tempo reale dipendono dal feed ATAC e possono mancare.
+          </p>
+          <p className="mt-2">
+            <a
+              href="https://ko-fi.com/codingpao"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-neutral-500 underline underline-offset-2 active:text-neutral-900"
+            >
+              Offrimi un caffè
+            </a>
+          </p>
         </footer>
         <RegisterSW />
       </body>
