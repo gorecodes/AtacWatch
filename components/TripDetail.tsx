@@ -8,6 +8,7 @@ import type { Route } from "@/lib/gtfs";
 import { routeTypeInfo } from "@/lib/gtfs";
 import { usePolling } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
+import { BackGlyph, LiveBeacon } from "./Glyphs";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -69,15 +70,36 @@ export default function TripDetail({ tripId }: { tripId: string }) {
 
   return (
     <div className="mx-auto max-w-lg">
-      <header className="flex items-center gap-3 px-4 pt-5 pb-3">
-        <button onClick={() => router.back()} aria-label="Indietro" className="text-xl text-neutral-500">‹</button>
-        {route && <RouteBadge shortName={route.short_name} type={route.type} color={route.color} textColor={route.text_color} size="lg" />}
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-semibold">{destination ? `→ ${destination}` : "Corsa"}</h1>
-          <p className="text-xs text-neutral-500">
-            {route ? routeTypeInfo(route.type).label : ""}
-            {vehicle ? " · 🟢 in viaggio" : " · mezzo non localizzato"}
-          </p>
+      <header className="bg-neutral-900 px-4 pb-4 pt-4 text-white">
+        <div className="mb-2.5 flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            aria-label="Indietro"
+            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-300 active:text-white"
+          >
+            <BackGlyph className="h-4 w-4" />
+            <span className="text-[13px]">Indietro</span>
+          </button>
+          <span className="flex items-center gap-1.5 text-[12px] text-neutral-300">
+            {vehicle ? (
+              <>
+                <LiveBeacon />
+                Mezzo localizzato
+              </>
+            ) : (
+              "Mezzo non localizzato"
+            )}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {route && <RouteBadge shortName={route.short_name} type={route.type} color={route.color} textColor={route.text_color} size="lg" />}
+          <div className="min-w-0 flex-1">
+            <h1 className="name truncate text-[19px] font-semibold leading-tight">
+              {destination ?? "Corsa"}
+            </h1>
+            {route && <p className="text-[13px] text-neutral-400">{routeTypeInfo(route.type).label}</p>}
+          </div>
         </div>
       </header>
 
@@ -114,14 +136,15 @@ export default function TripDetail({ tripId }: { tripId: string }) {
               <Link href={`/stop/${encodeURIComponent(s.stop_id)}`} className="flex items-center gap-3 py-2 active:opacity-70">
                 <span className="relative flex w-4 justify-center">
                   <span className="absolute inset-y-0 w-0.5 bg-neutral-300" style={{ top: i === 0 ? "50%" : 0, bottom: i === stops.length - 1 ? "50%" : 0 }} />
-                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${isNext ? "border-emerald-500 bg-emerald-500" : passed ? "border-neutral-300 bg-neutral-300" : "border-neutral-400 bg-white"}`} />
+                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${isNext ? "border-live-500 bg-live-500" : passed ? "border-neutral-300 bg-neutral-300" : "border-neutral-400 bg-white"}`} />
                 </span>
-                <span className={`flex-1 truncate text-sm ${passed ? "text-neutral-400" : ""}`}>
+                <span className={`name min-w-0 flex-1 truncate text-[15px] ${passed ? "text-neutral-400" : "text-neutral-900"}`}>
                   {s.name}
-                  {s.code && <span className="ml-1.5 text-xs text-neutral-500">#{s.code}</span>}
                 </span>
-                <span className={`w-12 text-right text-sm tabular-nums ${isNext ? "font-semibold text-emerald-600" : passed ? "text-neutral-400" : "text-neutral-700"}`}>
-                  {isNext && mins != null && mins <= 0 ? "in arrivo" : hhmm(s.eta_ts)}
+                <span className={`w-[68px] shrink-0 text-right tabular-nums ${isNext ? "font-semibold text-live-600" : passed ? "text-neutral-400" : "text-neutral-700"}`}>
+                  {isNext && mins != null && mins <= 0
+                    ? <span className="text-[13px]">in arrivo</span>
+                    : <span className="text-[15px]">{hhmm(s.eta_ts)}</span>}
                 </span>
               </Link>
             </li>

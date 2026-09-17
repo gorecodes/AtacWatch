@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
+import { withRouteColors } from "@/lib/routeColors";
 
 // Arrivi alla fermata (realtime + orario programmato) + anagrafica fermata
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -7,10 +8,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   try {
     const sql = getSql();
-    const [stopRows, arrivals] = await Promise.all([
+    const [stopRows, rows] = await Promise.all([
       sql`SELECT stop_id, name, code FROM stops WHERE stop_id = ${id} LIMIT 1`,
-      sql`SELECT * FROM stop_arrivals(${id})`,
+      sql<{ route_id: string }[]>`SELECT * FROM stop_arrivals(${id})`,
     ]);
+    const arrivals = await withRouteColors(rows);
 
     return NextResponse.json(
       { stop: stopRows[0] ?? null, arrivals },

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
+import { withRouteColors } from "@/lib/routeColors";
 
 // Cache in-memory: evita chiamate DB ripetute dallo stesso utente nel polling.
 // Chiave: lat/lon arrotondati a 3 decimali (~100m) + raggio. TTL: 25 secondi.
@@ -31,7 +32,10 @@ export async function GET(req: Request) {
 
   try {
     const sql = getSql();
-    const arrivals = await sql`SELECT * FROM nearby_arrivals(${lat}, ${lon}, ${radius}, ${25})`;
+    const rows = await sql<{ route_id: string }[]>`
+      SELECT * FROM nearby_arrivals(${lat}, ${lon}, ${radius}, ${25})
+    `;
+    const arrivals = await withRouteColors(rows);
 
     cache.set(key, { arrivals, ts: Date.now() });
 

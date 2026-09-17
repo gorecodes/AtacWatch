@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Route, StopResult } from "@/lib/gtfs";
-import { routeTypeInfo } from "@/lib/gtfs";
+import { routeTypeInfo, routeName } from "@/lib/gtfs";
 import RouteBadge from "./RouteBadge";
+import { SearchGlyph, StopGlyph } from "./Glyphs";
 
 export default function SearchBar() {
   const router = useRouter();
@@ -62,43 +63,53 @@ export default function SearchBar() {
   return (
     <div>
       <div className="relative">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">🔍</span>
+        <SearchGlyph className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-neutral-400" />
         <input
           value={q}
           onChange={(e) => onChange(e.target.value)}
           inputMode="search"
           autoComplete="off"
           placeholder="Cerca una linea o una fermata"
-          className="w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-base outline-none placeholder:text-neutral-400 focus:border-brand-600"
+          className="w-full rounded border border-neutral-300 bg-white py-2.5 pl-10 pr-3 text-[16px] outline-none placeholder:text-neutral-400 focus:border-neutral-900"
         />
       </div>
       {!hasQuery && (
-        <p className="mt-1.5 px-1 text-xs text-neutral-500">
-          Per linea (es. 64, A), per nome fermata o per <span className="text-neutral-400">numero di palina</span>.
+        <p className="mt-1.5 text-[12px] text-neutral-500">
+          Numero di linea, nome della fermata o numero di palina.
         </p>
       )}
 
       {hasQuery && (
-        <div className="mt-3 space-y-4">
-          {loading && empty && <p className="px-1 text-sm text-neutral-500">Cerco…</p>}
-          {empty && <p className="px-1 text-sm text-neutral-500">Nessun risultato.</p>}
+        <div className="mt-4 space-y-5">
+          {loading && empty && <p className="text-[14px] text-neutral-500">Cerco…</p>}
+          {empty && !loading && (
+            <p className="text-[14px] text-neutral-500">
+              Nessuna linea o fermata con questo nome.
+            </p>
+          )}
 
           {routes.length > 0 && (
             <section>
-              <h3 className="mb-1.5 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Linee</h3>
-              <ul className="space-y-1.5">
+              <h3 className="mb-1 text-[13px] font-semibold text-neutral-500">Linee</h3>
+              <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
                 {routes.map((r) => (
                   <li key={r.route_id}>
                     <button
                       onClick={() => router.push(`/line/${encodeURIComponent(r.route_id)}`)}
-                      className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-left shadow-sm active:bg-neutral-100"
+                      className="flex w-full items-center gap-2.5 py-2.5 text-left active:bg-neutral-200/40"
                     >
                       <RouteBadge shortName={r.short_name} type={r.type} color={r.color} textColor={r.text_color} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm">{r.long_name ?? routeTypeInfo(r.type).label}</span>
-                        <span className="text-xs text-neutral-500">{routeTypeInfo(r.type).label}</span>
+                        <span className="name block truncate text-[15px] leading-snug text-neutral-900">
+                          {routeName(r.long_name, r.type)}
+                        </span>
+                        {r.long_name?.trim() && (
+                          <span className="block text-[13px] leading-snug text-neutral-500">
+                            {routeTypeInfo(r.type).label}
+                          </span>
+                        )}
                       </span>
-                      <span className="text-neutral-400">›</span>
+                      <span className="shrink-0 text-neutral-300">›</span>
                     </button>
                   </li>
                 ))}
@@ -108,25 +119,26 @@ export default function SearchBar() {
 
           {stops.length > 0 && (
             <section>
-              <h3 className="mb-1.5 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Fermate</h3>
-              <ul className="space-y-1.5">
+              <h3 className="mb-1 text-[13px] font-semibold text-neutral-500">Fermate</h3>
+              <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
                 {stops.map((s) => (
                   <li key={s.stop_id}>
                     <button
                       onClick={() => router.push(`/stop/${encodeURIComponent(s.stop_id)}`)}
-                      className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-left shadow-sm active:bg-neutral-100"
+                      className="flex w-full items-center gap-2.5 py-2.5 text-left active:bg-neutral-200/40"
                     >
-                      <span className="text-lg">🚏</span>
+                      <StopGlyph className="h-5 w-5 shrink-0 text-neutral-400" />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm">
+                        <span className="name block truncate text-[15px] leading-snug text-neutral-900">
                           {s.name}
-                          {s.code && <span className="ml-1.5 text-xs text-neutral-500">#{s.code}</span>}
                         </span>
-                        <span className="block truncate text-xs text-neutral-500">
-                          {s.routes?.length ? s.routes.slice(0, 8).join(" · ") : "—"}
+                        <span className="block truncate text-[13px] leading-snug text-neutral-500">
+                          {s.code ? `palina ${s.code}` : null}
+                          {s.code && s.routes?.length ? " · " : null}
+                          {s.routes?.length ? s.routes.slice(0, 8).join(" ") : null}
                         </span>
                       </span>
-                      <span className="text-neutral-400">›</span>
+                      <span className="shrink-0 text-neutral-300">›</span>
                     </button>
                   </li>
                 ))}

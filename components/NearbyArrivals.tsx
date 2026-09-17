@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { NearbyArrival } from "@/lib/gtfs";
-import { etaLabel, minutesUntil } from "@/lib/gtfs";
+import { delayLabel } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
+import Eta from "./Eta";
+import { PinGlyph } from "./Glyphs";
 
 type Coords = { lat: number; lon: number };
 type State =
@@ -43,7 +45,7 @@ export default function NearbyArrivals() {
 
   function locate(background = false) {
     if (!("geolocation" in navigator)) {
-      setState({ kind: "error", msg: "Geolocalizzazione non disponibile" });
+      setState({ kind: "error", msg: "Questo browser non può darmi la posizione" });
       return;
     }
     if (!background) setState({ kind: "locating" });
@@ -112,7 +114,7 @@ export default function NearbyArrivals() {
         const isTimeout = err instanceof Error && err.name === "AbortError";
         return {
           kind: "error",
-          msg: isTimeout ? "Timeout — rete lenta?" : "Errore nel recupero delle corse",
+          msg: isTimeout ? "La rete non risponde" : "Non riesco a leggere le corse",
         };
       });
     }
@@ -122,28 +124,29 @@ export default function NearbyArrivals() {
 
   return (
     <section>
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-500">Corse vicine</h2>
-        <div className="flex items-center gap-2">
-          {state.kind === "ok" && (
-            <div className="flex rounded-lg border border-neutral-200 text-xs">
+      <div className="mb-1 flex items-baseline justify-between gap-3">
+        <h2 className="text-[15px] font-semibold text-neutral-900">Vicino a te</h2>
+        <div className="flex items-baseline gap-3 text-[13px]">
+          {state.kind === "ok" && state.arrivals.length > 0 && (
+            <div className="flex overflow-hidden rounded border border-neutral-200">
               {(["distance", "time"] as SortKey[]).map((key) => (
                 <button
                   key={key}
                   onClick={() => setSortBy(key)}
+                  aria-pressed={sortBy === key}
                   className={`px-2 py-0.5 ${
                     sortBy === key
-                      ? "bg-brand-600 text-white"
+                      ? "bg-neutral-900 font-medium text-white"
                       : "text-neutral-500"
-                  } first:rounded-l-lg last:rounded-r-lg`}
+                  }`}
                 >
-                  {key === "distance" ? "Vicino" : "Orario"}
+                  {key === "distance" ? "Distanza" : "Attesa"}
                 </button>
               ))}
             </div>
           )}
           {(state.kind === "ok" || state.kind === "loading") && (
-            <button onClick={() => fetchArrivals()} className="text-xs text-brand-600 active:text-brand-500">
+            <button onClick={() => fetchArrivals()} className="text-neutral-500 underline decoration-neutral-300 underline-offset-2">
               Aggiorna
             </button>
           )}
@@ -153,80 +156,76 @@ export default function NearbyArrivals() {
       {state.kind === "idle" && (
         <button
           onClick={() => locate()}
-          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-left text-sm text-neutral-700 shadow-sm active:bg-neutral-100"
+          className="flex w-full items-center gap-2.5 border-y border-neutral-200 py-3 text-left active:bg-neutral-200/40"
         >
-          📍 Mostra le corse vicine a me
+          <PinGlyph className="h-5 w-5 shrink-0 text-brand-500" />
+          <span>
+            <span className="block text-[15px] font-medium text-neutral-900">
+              Trova le fermate vicine
+            </span>
+            <span className="block text-[13px] text-neutral-500">
+              Uso la posizione solo sul momento, non la salvo
+            </span>
+          </span>
         </button>
       )}
 
       {state.kind === "locating" && (
-        <p className="text-sm text-neutral-500">Cerco la tua posizione…</p>
+        <p className="py-3 text-[14px] text-neutral-500">Cerco dove sei…</p>
       )}
 
-      {(state.kind === "loading") && (
-        <p className="text-sm text-neutral-500">Carico le corse vicine…</p>
+      {state.kind === "loading" && (
+        <p className="py-3 text-[14px] text-neutral-500">Leggo le corse in arrivo…</p>
       )}
 
       {state.kind === "denied" && (
-        <p className="text-sm text-neutral-500">
-          Posizione negata. Abilita la geolocalizzazione e{" "}
-          <button onClick={() => locate()} className="text-brand-600 underline">riprova</button>.
+        <p className="py-3 text-[14px] text-neutral-500">
+          Non ho il permesso di usare la posizione. Abilitalo nelle impostazioni del browser, poi{" "}
+          <button onClick={() => locate()} className="font-medium text-brand-600 underline underline-offset-2">riprova</button>
+          . Oppure cerca la fermata per nome qui sopra.
         </p>
       )}
 
       {state.kind === "error" && (
-        <p className="text-sm text-neutral-500">
+        <p className="py-3 text-[14px] text-neutral-500">
           {state.msg}.{" "}
-          <button onClick={() => locate()} className="text-brand-600 underline">Riprova</button>.
+          <button onClick={() => locate()} className="font-medium text-brand-600 underline underline-offset-2">Riprova</button>
         </p>
       )}
 
       {state.kind === "ok" && state.arrivals.length === 0 && (
-        <p className="text-sm text-neutral-500">
-          Nessuna corsa nei prossimi 30 minuti nel raggio di 700 m.
+        <p className="py-3 text-[14px] text-neutral-500">
+          Nessun mezzo passa entro 700 metri nella prossima mezz&apos;ora. Di notte
+          o in zone periferiche capita: prova a cercare la linea per numero.
         </p>
       )}
 
       {state.kind === "ok" && state.arrivals.length > 0 && (
-        <ul className="space-y-1.5">
+        <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
           {sorted(state.arrivals, sortBy).map((a, i) => {
-            const href = `/stop/${encodeURIComponent(a.stop_id)}`;
+            const delay = a.is_realtime ? delayLabel(a.delay) : null;
             return (
               <li key={`${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`}>
                 <Link
-                  href={href}
-                  className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 shadow-sm active:bg-neutral-100"
+                  href={`/stop/${encodeURIComponent(a.stop_id)}`}
+                  className="flex items-center gap-3 py-2.5 active:bg-neutral-200/40"
                 >
-                  <RouteBadge shortName={a.short_name} />
+                  <RouteBadge shortName={a.short_name} color={a.color} textColor={a.text_color} />
 
-                  {/* verso + fermata */}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">
-                      → {a.headsign ?? "—"}
+                    <span className="name block truncate text-[15px] font-medium leading-snug text-neutral-900">
+                      {a.headsign ?? "Destinazione non indicata"}
                     </span>
-                    <span className="block truncate text-xs text-neutral-500">
-                      {a.stop_name}
-                      {a.stop_code && (
-                        <span className="ml-1 text-neutral-400">#{a.stop_code}</span>
-                      )}
-                      <span className="mx-1 text-neutral-300">·</span>
-                      {a.distance_m} m
+                    <span className="name block truncate text-[13px] leading-snug text-neutral-500">
+                      {a.stop_name}, {a.distance_m} m
                     </span>
                   </span>
 
-                  {/* ETA */}
-                  <span className="flex shrink-0 flex-col items-end gap-0.5">
-                    <span
-                      className={`text-base font-semibold tabular-nums ${
-                        a.is_realtime ? "text-emerald-600" : "text-neutral-700"
-                      }`}
-                    >
-                      {etaLabel(minutesUntil(a.eta_ts, now))}
-                    </span>
-                    {a.is_realtime && (
-                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                    )}
-                  </span>
+                  {delay && (
+                    <span className="shrink-0 text-[12px] tabular-nums text-brand-500">{delay}</span>
+                  )}
+
+                  <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
                 </Link>
               </li>
             );

@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { Route } from "@/lib/gtfs";
-import { routeTypeInfo, minutesUntil } from "@/lib/gtfs";
+import { routeTypeInfo, routeName, minutesUntil } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
+import { BackGlyph, ChevronGlyph, LiveDot, LiveBeacon } from "./Glyphs";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -208,61 +209,85 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
 
   return (
     <div className="mx-auto max-w-lg">
-      <header className="flex items-center gap-3 px-4 pt-5 pb-3">
-        <Link href="/" aria-label="Torna alla home" className="text-xl text-neutral-500">‹</Link>
-        {route && <RouteBadge shortName={route.short_name} type={route.type} color={route.color} textColor={route.text_color} size="lg" />}
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-semibold">{route?.long_name ?? (route ? routeTypeInfo(route.type).label : "…")}</h1>
-          {route && <p className="text-xs text-neutral-500">{routeTypeInfo(route.type).label}</p>}
+      <header className="bg-neutral-900 px-4 pb-4 pt-4 text-white">
+        <div className="mb-2.5 flex items-center justify-between">
+          <Link
+            href="/"
+            aria-label="Torna alla home"
+            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-300 active:text-white"
+          >
+            <BackGlyph className="h-4 w-4" />
+            <span className="text-[13px]">Home</span>
+          </Link>
+          {live.length > 0 && (
+            <span className="flex items-center gap-1.5 text-[12px] text-neutral-300">
+              <LiveBeacon />
+              {live.length} {live.length === 1 ? "mezzo in linea" : "mezzi in linea"}
+            </span>
+          )}
         </div>
-        {live.length > 0 && (
-          <span className="flex items-center gap-1 text-xs text-emerald-600">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            {live.length}
-          </span>
-        )}
+
+        <div className="flex items-center gap-3">
+          {route && (
+            <RouteBadge
+              shortName={route.short_name}
+              type={route.type}
+              color={route.color}
+              textColor={route.text_color}
+              size="lg"
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="name truncate text-[19px] font-semibold leading-tight">
+              {route ? routeName(route.long_name, route.type) : "…"}
+            </h1>
+            {/* Il tipo sotto solo se il titolo è un nome vero, altrimenti
+                ripeteremmo "Bus" due volte di fila. */}
+            {route?.long_name?.trim() && (
+              <p className="text-[13px] text-neutral-400">{routeTypeInfo(route.type).label}</p>
+            )}
+          </div>
+        </div>
       </header>
 
+      {/* I due versi. Prima erano pill a una riga con `truncate`, e i capolinea
+          romani non ci entravano mai ("→ P.ZA STAZIONE S. PIET…"): ora vanno a
+          capo. Sotto c'era anche una riga "capolinea X → Y" che ripeteva la
+          stessa informazione, ed è stata rimossa. */}
       {directions.length > 1 && dir != null && (
-        <div className="flex gap-2 px-4 pb-3">
+        <div className="grid grid-cols-2 gap-2 px-4 pt-3">
           {directions.map((d) => (
             <button
               key={d.direction_id}
               onClick={() => setDir(d.direction_id)}
-              className={`flex-1 truncate rounded-lg border px-3 py-1.5 text-xs ${
+              aria-pressed={d.direction_id === dir}
+              className={`name rounded border px-2.5 py-1.5 text-left text-[13px] leading-snug ${
                 d.direction_id === dir
-                  ? "border-brand-600 bg-brand-50 text-brand-600"
-                  : "border-neutral-200 text-neutral-500"
+                  ? "border-neutral-900 bg-neutral-900 font-semibold text-white"
+                  : "border-neutral-300 text-neutral-600"
               }`}
             >
-              → {d.headsign ?? `Verso ${d.direction_id}`}
+              {d.headsign ?? `Verso ${d.direction_id}`}
             </button>
           ))}
         </div>
       )}
 
       {stops.length > 0 && (
-        <div className="flex items-center gap-2 px-4 pb-3 text-xs">
-          <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-500">capolinea</span>
-          <span className="truncate text-neutral-500">{stops[0].name}</span>
-          <span className="shrink-0 text-neutral-400">→</span>
-          <span className="truncate font-medium text-neutral-800">{stops[stops.length - 1].name}</span>
-        </div>
-      )}
-
-      {stops.length > 0 && (
-        <div className="px-4 pb-4">
-          <div className="mb-1.5 flex items-center justify-between">
-            <p className="text-sm font-semibold text-neutral-800">Prossime partenze</p>
+        <div className="px-4 pb-4 pt-3">
+          <div className="mb-1.5 flex items-baseline justify-between gap-3">
+            <p className="text-[15px] font-semibold text-neutral-900">
+              Partenze da {stops[0].name}
+            </p>
             <button
               onClick={() => {
                 const next = !showTimetable;
                 setShowTimetable(next);
                 if (next && !timetable && dir != null) loadTimetable(stops[0].stop_id, dir, timetableDate);
               }}
-              className="text-xs text-brand-600"
+              className="shrink-0 text-[13px] text-neutral-500 underline decoration-neutral-300 underline-offset-2"
             >
-              Orario completo {showTimetable ? "▴" : "▾"}
+              {showTimetable ? "Solo le prossime" : "Tutto l'orario"}
             </button>
           </div>
           {!showTimetable && (
@@ -275,13 +300,15 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
                 {departures.slice(0, 8).map((d, i) => (
                   <span
                     key={`${d.eta_ts}-${i}`}
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm tabular-nums ${
-                      d.is_realtime ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-700"
+                    className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[15px] tabular-nums ${
+                      d.is_realtime
+                        ? "border-live-500 font-semibold text-live-600"
+                        : "border-neutral-200 bg-white text-neutral-600"
                     }`}
-                    title={d.is_realtime ? "tempo reale" : "orario programmato"}
+                    title={d.is_realtime ? "Dato in tempo reale" : "Orario previsto"}
                   >
                     {hhmm(d.eta_ts)}
-                    {d.is_realtime && <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />}
+                    {d.is_realtime && <LiveDot />}
                   </span>
                 ))}
               </div>
@@ -347,69 +374,75 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
           const stopTimes = times[s.stop_id];
           return (
             <li key={`${s.stop_id}-${s.stop_sequence}`}>
-              <div className="flex items-center gap-3 py-2">
+              {/* La riga intera apre gli orari. Prima ogni fermata aveva un
+                  bottone "orari ▾": trenta bottoni identici incolonnati, che
+                  rubavano anche la larghezza al nome. Il link alla fermata sta
+                  dentro il pannello aperto. */}
+              <button
+                onClick={() => toggleStop(s.stop_id)}
+                aria-expanded={open}
+                className="flex w-full items-center gap-3 py-2 text-left active:bg-neutral-200/40"
+              >
                 <span className="relative flex w-4 justify-center self-stretch">
                   <span className="absolute inset-y-0 w-0.5 bg-neutral-300" style={{ top: i === 0 ? "50%" : 0, bottom: i === stops.length - 1 ? "50%" : 0 }} />
-                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${here > 0 ? "border-emerald-500 bg-emerald-500" : "border-neutral-400 bg-white"}`} />
+                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${here > 0 ? "border-live-500 bg-live-500" : "border-neutral-400 bg-white"}`} />
                 </span>
-                <Link href={`/stop/${encodeURIComponent(s.stop_id)}`} className="min-w-0 flex-1 truncate text-sm active:opacity-70">
+                <span className="name min-w-0 flex-1 truncate text-[15px] text-neutral-900">
                   {s.name}
-                  {s.code && <span className="ml-1.5 text-xs text-neutral-500">#{s.code}</span>}
-                </Link>
+                </span>
                 {here > 0 && (
-                  <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-                    🚌 qui{here > 1 ? ` ×${here}` : ""}
+                  <span className="shrink-0 text-[12px] font-medium text-live-600">
+                    {here > 1 ? `${here} mezzi qui` : "mezzo qui"}
                   </span>
                 )}
-                <button
-                  onClick={() => toggleStop(s.stop_id)}
-                  className={`shrink-0 rounded-md border px-2 py-1 text-xs ${open ? "border-brand-600 text-brand-600" : "border-neutral-200 text-neutral-500"}`}
-                >
-                  orari {open ? "▴" : "▾"}
-                </button>
-              </div>
+                <ChevronGlyph open={open} className="h-4 w-4 shrink-0 text-neutral-400" />
+              </button>
 
               {open && (
-                <div className="ml-7 mb-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 shadow-sm">
+                <div className="mb-2 ml-7 border-l-2 border-neutral-200 pl-3">
                   {loadingStop === s.stop_id && !stopTimes && (
-                    <p className="text-xs text-neutral-500">Carico gli orari…</p>
+                    <p className="py-1 text-[13px] text-neutral-500">Leggo gli orari…</p>
                   )}
                   {stopTimes && stopTimes.length === 0 && (
-                    <p className="text-xs text-neutral-500">Nessun passaggio nelle prossime 2 ore.</p>
+                    <p className="py-1 text-[13px] text-neutral-500">Nessun passaggio nelle prossime 2 ore.</p>
                   )}
                   {stopTimes && stopTimes.length > 0 && (
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {stopTimes.slice(0, 3).map((a, k) => {
                         const inner = (
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="tabular-nums">{hhmm(a.eta_ts)}</span>
-                            {a.is_realtime ? (
-                              <span className="flex items-center gap-1 text-xs text-emerald-600">
-                                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                                tempo reale
-                              </span>
-                            ) : (
-                              <span className="text-xs text-neutral-500">🕐 programmato</span>
-                            )}
-                            <span className="ml-auto text-xs text-neutral-500">
-                              {minutesUntil(a.eta_ts, now) <= 0 ? "in arrivo" : `tra ${minutesUntil(a.eta_ts, now)} min`}
+                          <div className="flex items-center gap-2">
+                            <span className="w-11 shrink-0 text-[15px] tabular-nums text-neutral-900">
+                              {hhmm(a.eta_ts)}
+                            </span>
+                            {a.is_realtime && <LiveDot />}
+                            <span className={`text-[13px] ${a.is_realtime ? "text-live-600" : "text-neutral-500"}`}>
+                              {minutesUntil(a.eta_ts, now) <= 0
+                                ? "in arrivo"
+                                : `tra ${minutesUntil(a.eta_ts, now)} min`}
                             </span>
                           </div>
                         );
                         return (
                           <li key={`${a.trip_id ?? "sched"}-${a.eta_ts}-${k}`}>
                             {a.trip_id ? (
-                              <Link href={`/trip/${encodeURIComponent(a.trip_id)}`} className="block active:opacity-70">
+                              <Link href={`/trip/${encodeURIComponent(a.trip_id)}`} className="block py-0.5 active:opacity-70">
                                 {inner}
                               </Link>
                             ) : (
-                              inner
+                              <div className="py-0.5">{inner}</div>
                             )}
                           </li>
                         );
                       })}
                     </ul>
                   )}
+                  <Link
+                    href={`/stop/${encodeURIComponent(s.stop_id)}`}
+                    className="mt-1.5 inline-block text-[13px] text-neutral-500 underline decoration-neutral-300 underline-offset-2"
+                  >
+                    Tutte le linee di questa fermata
+                    {s.code && <span className="tabular-nums"> (palina {s.code})</span>}
+                  </Link>
                 </div>
               )}
             </li>

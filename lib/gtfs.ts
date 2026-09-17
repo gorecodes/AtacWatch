@@ -1,19 +1,30 @@
 /** Tipi e helper condivisi per i dati GTFS di Roma. */
 
-/** route_type GTFS -> etichetta/icona. Roma usa principalmente 0,1,2,3. */
-export const ROUTE_TYPE: Record<number, { label: string; icon: string }> = {
-  0: { label: "Tram", icon: "🚊" },
-  1: { label: "Metro", icon: "🚇" },
-  2: { label: "Treno", icon: "🚆" },
-  3: { label: "Bus", icon: "🚌" },
-  4: { label: "Traghetto", icon: "⛴️" },
-  5: { label: "Funicolare", icon: "🚡" },
-  7: { label: "Funicolare", icon: "🚡" },
-  11: { label: "Filobus", icon: "🚎" },
+/** route_type GTFS -> etichetta. Roma usa principalmente 0,1,2,3. */
+export const ROUTE_TYPE: Record<number, { label: string }> = {
+  0: { label: "Tram" },
+  1: { label: "Metro" },
+  2: { label: "Treno" },
+  3: { label: "Bus" },
+  4: { label: "Traghetto" },
+  5: { label: "Funicolare" },
+  7: { label: "Funicolare" },
+  11: { label: "Filobus" },
 };
 
 export function routeTypeInfo(type: number) {
-  return ROUTE_TYPE[type] ?? { label: "Linea", icon: "🚌" };
+  return ROUTE_TYPE[type] ?? { label: "Linea" };
+}
+
+/**
+ * Nome da mostrare per una linea.
+ *
+ * 360 delle 434 linee di Roma hanno long_name = '' (stringa VUOTA, non NULL):
+ * `longName ?? label` non la intercetta, e il titolo restava vuoto. Serve un
+ * controllo sul contenuto, non sulla nullità.
+ */
+export function routeName(longName: string | null, type: number): string {
+  return longName?.trim() || routeTypeInfo(type).label;
 }
 
 export type Route = {
@@ -52,6 +63,9 @@ export type Arrival = {
   minutes: number;
   is_realtime: boolean;
   delay: number | null;
+  // Aggiunti dall'API via withRouteColors: valorizzati solo per le metro.
+  color: string | null;
+  text_color: string | null;
 };
 
 export type NearbyArrival = {
@@ -67,6 +81,9 @@ export type NearbyArrival = {
   stop_name: string;
   stop_code: string | null;
   distance_m: number;
+  // Aggiunti dall'API via withRouteColors: valorizzati solo per le metro.
+  color: string | null;
+  text_color: string | null;
 };
 
 export type Vehicle = {
@@ -109,9 +126,29 @@ export function etaLabel(minutes: number): string {
   return `${minutes} min`;
 }
 
-/** Colore di sfondo per il badge linea (fallback grigio). */
+/**
+ * Colore del badge linea. Il GTFS di Roma popola `color` solo per le 4 linee
+ * metro (MEA, MEB, MEB1, MEC): tutti i bus cadono sul fallback basalto, come
+ * le targhette nere su fondo chiaro di una palina reale.
+ */
 export function routeBadgeStyle(color: string | null, textColor: string | null) {
-  const bg = color ? `#${color.replace("#", "")}` : "#1f2937";
-  const fg = textColor ? `#${textColor.replace("#", "")}` : "#ffffff";
+  const bg = color ? `#${color.replace("#", "")}` : "#1B2027";
+  const fg = textColor ? `#${textColor.replace("#", "")}` : "#FFFFFF";
   return { backgroundColor: bg, color: fg };
+}
+
+/**
+ * Ritardo in secondi -> etichetta, o null se non vale mostrarlo.
+ *
+ * Mostriamo SOLO il ritardo, mai l'anticipo, e solo entro una banda
+ * plausibile. Il `delay` grezzo di ATAC non è presentabile: un terzo dei mezzi
+ * risulta "in anticipo" di oltre 5 minuti e si vedono valori fino a 3,6 ore
+ * (le misure sono in testa a 0016_delay_stats.sql). Un "−19 min" in pagina
+ * sarebbe peggio che non scrivere niente, perché sembra un'informazione.
+ *
+ * Sotto i 2 minuti non allarmiamo: è dentro il rumore del feed.
+ */
+export function delayLabel(delay: number | null): string | null {
+  if (delay == null || delay < 120 || delay > 2700) return null;
+  return `+${Math.round(delay / 60)} min`;
 }

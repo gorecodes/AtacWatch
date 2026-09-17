@@ -1,39 +1,54 @@
 @import "tailwindcss";
 
 /*
- * Palette light istituzionale — ispirata ai colori del Comune di Roma.
- * Tutti i token sono qui: cambiare questi valori aggiorna l'intera UI.
+ * Palette "palina": l'app è un'insegna di fermata, non una brochure civica.
+ *
+ * Regola che tiene insieme tutto: LA STRUTTURA È ACROMATICA, IL COLORE È UN
+ * DATO. I grigi basalto/ferro portano tutto il testo e le divisioni; il colore
+ * appare solo dove significa qualcosa — verde = dato in tempo reale, rosso =
+ * ritardo o identità ATAC, e i colori ufficiali delle metro arrivano dal feed
+ * GTFS (MEA arancio, MEB blu, MEC verde), non da qui.
+ *
+ * Tutti i token sono in questo blocco: cambiarli qui aggiorna l'intera UI.
  */
 @theme {
-  /* Scala neutral — toni chiari per sfondo/testo istituzionale */
-  --color-neutral-50:  #FAFAFA;   /* sfondo pagina */
-  --color-neutral-100: #F3F4F6;   /* sfondo sezione, hover */
-  --color-neutral-200: #E2E6EA;   /* bordi, divisori */
-  --color-neutral-300: #C8D0D9;   /* bordi evidenti */
-  --color-neutral-400: #8C98A4;   /* testo silenzioso, placeholder */
-  --color-neutral-500: #5A6472;   /* testo secondario */
-  --color-neutral-600: #3D4A58;   /* testo corpo */
-  --color-neutral-700: #2D3848;   /* testo medio */
-  --color-neutral-800: #1A2332;   /* testo primario */
-  --color-neutral-900: #0D1520;   /* titoli */
-  --color-neutral-950: #060D18;
+  /* Barlow: grottesco disegnato sulla segnaletica dei trasporti. La variante
+     semi-condensed serve ai nomi di luogo romani, che sono lunghissimi
+     ("C.SO VITTORIO EMANUELE/S. A. DELLA VALLE") e altrimenti si troncano. */
+  --font-sans: var(--font-barlow), system-ui, -apple-system, sans-serif;
+  --font-cond: var(--font-barlow-cond), system-ui, -apple-system, sans-serif;
 
-  /* Rosso Roma — palette brand principale */
-  --color-brand-50:  #FDF2F3;
-  --color-brand-100: #FAD9DC;
-  --color-brand-200: #F3A8B0;
-  --color-brand-300: #E8707E;
-  --color-brand-400: #D63C50;
-  --color-brand-500: #BA1A2C;
-  --color-brand-600: #8A1528;   /* Rosso capitolino — colore primario */
-  --color-brand-700: #6B1020;
-  --color-brand-800: #4D0C18;
-  --color-brand-900: #2E0710;
+  /* Scala neutra, ricalibrata su toni freddi di pietra e basalto. */
+  --color-neutral-50:  #F7F8F7;
+  --color-neutral-100: #EDEFEE;   /* pietra: sfondo pagina */
+  --color-neutral-200: #DCE0E0;   /* filetti e divisori */
+  --color-neutral-300: #BFC5C7;
+  --color-neutral-400: #8E979C;   /* testo silenzioso */
+  --color-neutral-500: #6B7480;   /* ferro: testo secondario */
+  --color-neutral-600: #4A535F;
+  --color-neutral-700: #333C47;
+  --color-neutral-800: #232B35;
+  --color-neutral-900: #1B2027;   /* basalto: inchiostro */
+  --color-neutral-950: #10141A;
 
-  /* Oro capitolino — accento secondario */
-  --color-gold-400: #D4A843;
-  --color-gold-500: #C4993D;
-  --color-gold-600: #A67F2E;
+  /* Rosso ATAC. Non è un rosso brand generico: è il rosso dei mezzi. */
+  --color-brand-50:  #FDF1F1;
+  --color-brand-100: #FADCDD;
+  --color-brand-200: #F0ADAF;
+  --color-brand-300: #E37B7F;
+  --color-brand-400: #D4444B;
+  --color-brand-500: #C4161C;
+  --color-brand-600: #A8121A;
+  --color-brand-700: #841016;
+  --color-brand-800: #5E0B10;
+  --color-brand-900: #38070A;
+
+  /* Verde "dato vivo". Volutamente denso, non un emerald acceso: deve reggere
+     su bianco alla luce del sole, in piedi a una fermata. */
+  --color-live-50:  #E7F4EE;
+  --color-live-500: #00875A;
+  --color-live-600: #006B48;
+  --color-live-700: #005437;
 }
 
 :root {
@@ -42,8 +57,14 @@
 
 html,
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: var(--font-sans);
   overscroll-behavior-y: none;
+}
+
+/* I nomi di fermata e di capolinea: condensati per guadagnare caratteri. */
+.name {
+  font-family: var(--font-cond);
+  letter-spacing: 0.005em;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -56,4 +77,14 @@ body {
 
 .maplibregl-map {
   font: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

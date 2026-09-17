@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapStyle, ROME_CENTER } from "@/lib/mapStyle";
@@ -17,7 +17,7 @@ function triangleImageData(): ImageData | null {
   canvas.height = s;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  ctx.fillStyle = "#06281d";
+  ctx.fillStyle = "#10141A";
   ctx.beginPath();
   ctx.moveTo(s / 2, 2);
   ctx.lineTo(s - 3, s - 4);
@@ -41,6 +41,29 @@ export default function RouteMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const vehiclesRef = useRef<LiveVehicle[]>(vehicles);
+  const boundsRef = useRef<maplibregl.LngLatBounds | null>(null);
+  const fittedRef = useRef(false);
+  // Stile pronto? L'handler viene agganciato alla creazione della mappa, dove
+  // è impossibile perdere l'evento, e il risultato passa per lo stato React
+  // così l'effect di disegno riparte da solo quando la mappa è utilizzabile.
+  const [ready, setReady] = useState(false);
+
+  /**
+   * Inquadra il tracciato, ma solo quando il contenitore ha una dimensione
+   * reale: al primo disegno può ancora essere alto 0 (import dinamico +
+   * idratazione), e un fitBounds su un viewport 0×0 dà uno zoom senza senso.
+   * Una volta riuscito non reinquadra più, così non combatte con chi trascina.
+   */
+  function fitStoredBounds() {
+    const map = mapRef.current;
+    const el = containerRef.current;
+    const b = boundsRef.current;
+    if (!map || !el || !b) return;
+    if (el.clientWidth === 0 || el.clientHeight === 0) return;
+    map.resize();
+    map.fitBounds(b, { padding: 40, maxZoom: 15, duration: 0 });
+    fittedRef.current = true;
+  }
 
   function vehicleData(list: LiveVehicle[]): GeoJSON.FeatureCollection {
     return {
@@ -63,7 +86,19 @@ export default function RouteMap({
       attributionControl: { compact: true },
     });
     mapRef.current = map;
+    if (map.isStyleLoaded()) setReady(true);
+    else map.on("load", () => setReady(true));
+
+    // Quando il contenitore passa da altezza 0 alla sua misura vera, riprova
+    // l'inquadratura: è il caso in cui il fit iniziale non poteva riuscire.
+    const ro = new ResizeObserver(() => {
+      if (!fittedRef.current) fitStoredBounds();
+      else map.resize();
+    });
+    ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -72,8 +107,10 @@ export default function RouteMap({
   // Tracciato + fermate (ricentra solo quando cambiano shape/stops)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    const lineColor = color ? `#${color.replace("#", "")}` : "#38bdf8";
+    if (!map || !ready) return;
+    // Le linee bus non hanno colore nel GTFS: restano basalto, e il colore
+    // se c'è è quello ufficiale della metro.
+    const lineColor = color ? `#${color.replace("#", "")}` : "#1B2027";
 
     const draw = () => {
       if (shape) {
@@ -126,8 +163,8 @@ export default function RouteMap({
           source: "route-vehicles",
           paint: {
             "circle-radius": 8,
-            "circle-color": "#10b981",
-            "circle-stroke-color": "#06281d",
+            "circle-color": "#00875A",
+            "circle-stroke-color": "#10141A",
             "circle-stroke-width": 2,
           },
         });
@@ -153,17 +190,22 @@ export default function RouteMap({
       if (shape) shape.coordinates.forEach((c) => coords.push([c[0], c[1]]));
       stops.forEach((s) => coords.push([s.lon, s.lat]));
       if (coords.length) {
-        const b = coords.reduce(
+        boundsRef.current = coords.reduce(
           (acc, c) => acc.extend(c),
           new maplibregl.LngLatBounds(coords[0], coords[0]),
         );
-        map.fitBounds(b, { padding: 48, maxZoom: 15, duration: 0 });
+        fittedRef.current = false;
+        fitStoredBounds();
       }
     };
 
-    if (map.isStyleLoaded()) draw();
-    else map.once("load", draw);
-  }, [shape, stops, color]);
+    // Nessuna attesa di eventi qui: ci arriviamo solo con `ready` true, quindi
+    // la mappa è già utilizzabile e si disegna subito. Aspettare un evento
+    // dentro questo effect era la causa della mappa vuota al primo
+    // caricamento: l'handler registrato al mount veniva rimosso dal cleanup
+    // quando arrivavano i dati, e l'evento non tornava più.
+    draw();
+  }, [ready, shape, stops, color]);
 
   // Aggiorna solo i mezzi (senza ricentrare)
   useEffect(() => {
