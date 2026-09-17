@@ -1,37 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { applicaTema, temaAttuale, type Tema } from "@/lib/theme";
 import { SunGlyph, MoonGlyph } from "./Glyphs";
+import { applicaTema, temaAttuale } from "@/lib/theme";
 
 /**
  * Tasto chiaro/scuro.
  *
- * Lo stato si legge dalla classe sul documento, che lo script inline ha già
- * messo prima del disegno: non serve un effetto al montaggio, e non c'è il
- * momento in cui l'icona è quella sbagliata.
+ * Nessuno stato React, ed è deliberato. La versione precedente leggeva il tema
+ * dal documento DURANTE il render: sul server il documento non esiste, quindi
+ * il primo disegno diceva "chiaro" e l'idratazione diceva "scuro". Il
+ * disallineamento faceva restare l'icona sbagliata dopo un ricaricamento, e il
+ * primo tocco sembrava non fare niente.
  *
- * L'icona mostra la modalità in cui si ANDREBBE, non quella attuale: una luna
- * significa "passa a scuro", che è ciò che si vuole sapere premendo.
+ * Ora entrambe le icone sono nel documento e il CSS ne mostra una sola, in
+ * base alla classe che lo script inline ha già messo prima del disegno: il
+ * server e il client producono lo stesso HTML, e non c'è niente da idratare.
+ * Il tema si legge solo al tocco, dentro un gestore di evento.
  */
 export default function ThemeToggle() {
-  const [tema, setTema] = useState<Tema | null>(null);
-
-  // Al primo disegno lato server il documento non esiste: si risolve alla
-  // prima interazione o leggendo pigramente qui, dentro il render del client.
-  const corrente = tema ?? (typeof document === "undefined" ? "chiaro" : temaAttuale());
-  const prossimo: Tema = corrente === "scuro" ? "chiaro" : "scuro";
-
   return (
     <button
-      onClick={() => {
-        applicaTema(prossimo);
-        setTema(prossimo);
-      }}
-      aria-label={prossimo === "scuro" ? "Passa alla modalità scura" : "Passa alla modalità chiara"}
+      onClick={() => applicaTema(temaAttuale() === "scuro" ? "chiaro" : "scuro")}
+      aria-label="Cambia tra modalità chiara e scura"
       className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-neutral-500 active:bg-neutral-200/60 active:text-neutral-900"
     >
-      {prossimo === "scuro" ? <MoonGlyph className="h-5 w-5" /> : <SunGlyph className="h-5 w-5" />}
+      {/* L'icona mostra la modalità in cui si ANDREBBE: in chiaro una luna,
+          perché premendo si passa a scuro. */}
+      <MoonGlyph className="h-5 w-5 dark:hidden" />
+      <SunGlyph className="hidden h-5 w-5 dark:block" />
     </button>
   );
 }

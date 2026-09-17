@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Il tema si cambia con un tasto, non solo con la preferenza di sistema,
+   quindi la variante dark deve agganciarsi a una CLASSE e non a
+   prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Palette "palina": l'app è un'insegna di fermata, non una brochure civica.
  *
@@ -68,18 +73,25 @@
 .dark {
   color-scheme: dark;
 
-  --color-neutral-50: #14181d;
-  --color-neutral-100: #181d23; /* sfondo pagina */
-  --color-neutral-200: #2a313a; /* filetti: un filo più marcati che in chiaro,
+  /* 50 NON segue il ribaltamento: in chiaro è la superficie in rilievo
+     (schede, campo di ricerca), più chiara della pagina, e in scuro deve
+     restare in rilievo, quindi più CHIARA dello sfondo. Ribaltandolo
+     meccanicamente finiva sotto al fondo e le schede sembravano incassate. */
+  --color-neutral-50: #242b35;
+  --color-neutral-100: #1a1f26; /* sfondo pagina */
+  --color-neutral-200: #2e353f; /* filetti: un filo più marcati che in chiaro,
                                    perché su fondo scuro spariscono prima */
-  --color-neutral-300: #38414c;
-  --color-neutral-400: #7c8791; /* testo silenzioso */
-  --color-neutral-500: #98a3ae; /* testo secondario */
-  --color-neutral-600: #b8c2cb;
-  --color-neutral-700: #d2dae1;
-  --color-neutral-800: #e4eaef;
-  --color-neutral-900: #f1f5f8; /* inchiostro, non bianco puro */
-  --color-neutral-950: #ffffff;
+  --color-neutral-300: #3c4551;
+  --color-neutral-400: #79848e; /* testo silenzioso */
+  --color-neutral-500: #96a1ac; /* testo secondario */
+  --color-neutral-600: #afb9c3;
+  --color-neutral-700: #c2cbd4;
+  /* L'inchiostro si ferma molto prima del bianco: su fondo scuro un bianco
+     pieno vibra e stanca. Resta sopra i 10:1 di contrasto, quindi leggibile
+     al sole, senza essere una lampadina. */
+  --color-neutral-800: #cfd7df;
+  --color-neutral-900: #d9e1e8;
+  --color-neutral-950: #e7edf3;
 
   /* Il rosso ATAC e il verde "dato vivo" vanno schiariti: i valori densi
      scelti per reggere il sole su fondo chiaro, su fondo scuro diventano
