@@ -76,7 +76,7 @@ export default function TripDetail({ tripId }: { tripId: string }) {
           <button
             onClick={() => router.back()}
             aria-label="Indietro"
-            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-500 active:text-neutral-900"
+            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-500 active:text-neutral-900"
           >
             <BackGlyph className="h-4 w-4" />
             <span className="text-[13px]">Indietro</span>

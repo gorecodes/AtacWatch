@@ -217,7 +217,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
           <Link
             href="/"
             aria-label="Torna alla home"
-            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-500 active:text-neutral-900"
+            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-500 active:text-neutral-900"
           >
             <BackGlyph className="h-4 w-4" />
             <span className="text-[13px]">Home</span>

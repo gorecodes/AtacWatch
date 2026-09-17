@@ -9,6 +9,7 @@ import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
 import { BackGlyph, StarGlyph, LiveBeacon } from "./Glyphs";
 import BellButton from "./BellButton";
+import Skeleton from "./Skeleton";
 
 type StopInfo = { stop_id: string; name: string; code: string | null } | null;
 const REFRESH_MS = 15000;
@@ -53,7 +54,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           <Link
             href="/"
             aria-label="Torna alla home"
-            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-300 active:text-white"
+            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-300 active:text-white"
           >
             <BackGlyph className="h-4 w-4" />
             <span className="text-[13px]">Home</span>
@@ -71,9 +72,11 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                 onClick={() => toggle({ stop_id: stopId, name: stop.name, code: stop.code ?? null })}
                 aria-pressed={starred}
                 aria-label={starred ? "Rimuovi dai preferiti" : "Salva nei preferiti"}
-                className={`-mr-1.5 rounded p-1.5 ${starred ? "text-white" : "text-neutral-400 active:text-white"}`}
+                className={`-mr-2.5 flex h-11 w-11 items-center justify-center rounded-full ${
+                  starred ? "text-white" : "text-neutral-400 active:bg-white/10 active:text-white"
+                }`}
               >
-                <StarGlyph filled={starred} className="h-5 w-5" />
+                <StarGlyph filled={starred} className="h-6 w-6" />
               </button>
             )}
           </div>
@@ -96,9 +99,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
         </p>
       )}
 
-      {loading && arrivals.length === 0 && (
-        <p className="px-4 py-6 text-[14px] text-neutral-500">Leggo gli arrivi…</p>
-      )}
+      {loading && arrivals.length === 0 && <Skeleton righe={5} className="px-4" />}
       {error && arrivals.length === 0 && (
         <p className="px-4 py-6 text-[14px] text-neutral-500">
           Non riesco a leggere gli arrivi.{" "}

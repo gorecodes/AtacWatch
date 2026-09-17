@@ -1,6 +1,4 @@
-import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
-import { RouteGlyph } from "@/components/Glyphs";
 import NearbyArrivals from "@/components/NearbyArrivals";
 import FavoriteStops from "@/components/FavoriteStops";
 import SupportBanner from "@/components/SupportBanner";
@@ -19,21 +17,19 @@ export default function HomePage() {
 
       <SearchBar />
 
-      <Link
-        href="/plan"
-        className="mt-3 flex items-center gap-2 border-y border-neutral-300 py-2.5 active:bg-neutral-200/40"
-      >
-        <RouteGlyph className="h-5 w-5 shrink-0 text-brand-500" />
-        <span className="flex-1 text-[15px] font-medium text-neutral-900">Calcola un percorso</span>
-        <span className="text-neutral-400">›</span>
-      </Link>
-
-      {/* I preferiti prima: non richiedono il permesso di posizione, quindi
-          sono l'unica cosa che può essere utile al primo colpo. */}
+      {/* Il link ai percorsi non serve più: è una voce della navigazione in
+          basso, sempre a portata di pollice. Restano i due blocchi che contano,
+          e i preferiti vengono prima perché non chiedono il permesso di
+          posizione, quindi sono l'unica cosa utile al primo colpo. */}
       <div className="mt-6 space-y-7">
         <FavoriteStops />
-        <SupportBanner />
         <NearbyArrivals />
+      </div>
+
+      {/* Il banner esce dal flusso del contenuto: in mezzo interrompeva la
+          lettura di ciò per cui si apre l'app. */}
+      <div className="mt-8">
+        <SupportBanner />
       </div>
     </div>
   );

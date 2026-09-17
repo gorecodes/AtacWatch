@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
+import BottomNav from "@/components/BottomNav";
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -38,7 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="it" className={`h-full antialiased ${barlow.variable} ${barlowCond.variable}`}>
       <body className="min-h-full flex flex-col bg-neutral-100 text-neutral-900">
         <main className="flex-1">{children}</main>
-        <footer className="mx-auto w-full max-w-lg px-4 py-6 text-[11px] leading-relaxed text-neutral-400">
+        <footer className="mx-auto w-full max-w-lg px-4 pb-4 pt-6 text-[11px] leading-relaxed text-neutral-400">
           <p>
             Dati di Roma Servizi per la Mobilità (ATAC, Roma TPL), licenza CC-BY-SA.
             Gli orari in tempo reale dipendono dal feed ATAC e possono mancare.
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </a>
           </p>
         </footer>
+        <BottomNav />
         <RegisterSW />
       </body>
     </html>

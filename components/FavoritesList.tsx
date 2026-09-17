@@ -42,9 +42,9 @@ function SortableRow({ stop, onRemove }: { stop: FavoriteStop; onRemove: () => v
         {...attributes}
         {...listeners}
         aria-label="Trascina per riordinare"
-        className="shrink-0 cursor-grab touch-none text-neutral-400 active:cursor-grabbing active:text-neutral-700"
+        className="-ml-2 flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center text-neutral-400 active:cursor-grabbing active:text-neutral-700"
       >
-        <GrabGlyph className="h-5 w-5" />
+        <GrabGlyph className="h-6 w-6" />
       </button>
 
       <Link
@@ -60,9 +60,9 @@ function SortableRow({ stop, onRemove }: { stop: FavoriteStop; onRemove: () => v
       <button
         onClick={onRemove}
         aria-label="Rimuovi dai preferiti"
-        className="shrink-0 text-brand-500 active:text-brand-700"
+        className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-brand-500 active:bg-brand-50"
       >
-        <StarGlyph filled className="h-5 w-5" />
+        <StarGlyph filled className="h-6 w-6" />
       </button>
     </li>
   );

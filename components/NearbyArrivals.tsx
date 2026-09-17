@@ -7,6 +7,7 @@ import { usePolling, useNow } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
 import { PinGlyph } from "./Glyphs";
+import Skeleton from "./Skeleton";
 
 type Coords = { lat: number; lon: number };
 type State =
@@ -177,9 +178,7 @@ export default function NearbyArrivals() {
         <p className="py-3 text-[14px] text-neutral-500">Cerco dove sei…</p>
       )}
 
-      {state.kind === "loading" && (
-        <p className="py-3 text-[14px] text-neutral-500">Leggo le corse in arrivo…</p>
-      )}
+      {state.kind === "loading" && <Skeleton righe={4} />}
 
       {state.kind === "denied" && (
         <p className="py-3 text-[14px] text-neutral-500">

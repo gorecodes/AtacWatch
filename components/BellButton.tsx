@@ -119,13 +119,15 @@ export default function BellButton({
       aria-label={subscribed ? "Rimuovi notifica" : "Avvisami all'arrivo"}
       aria-pressed={subscribed}
       disabled={loading}
-      className={`shrink-0 rounded p-1.5 transition-colors ${
+      // 44px è il minimo raccomandato per un bersaglio da toccare col dito:
+      // prima erano 30, e si sbagliava mira.
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors ${
         subscribed
-          ? "text-brand-500 active:text-brand-700"
-          : "text-neutral-400 active:text-neutral-700"
+          ? "text-brand-500 active:bg-brand-50"
+          : "text-neutral-400 active:bg-neutral-200/60"
       } ${loading ? "opacity-40" : ""}`}
     >
-      <BellGlyph filled={subscribed} className="h-4.5 w-4.5" />
+      <BellGlyph filled={subscribed} className="h-5 w-5" />
     </button>
   );
 }
