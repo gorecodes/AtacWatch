@@ -40,5 +40,15 @@ export function useFavorites() {
     return favorites.some((f) => f.stop_id === stop_id);
   }
 
-  return { favorites, toggle, isFavorite };
+  function reorder(oldIndex: number, newIndex: number) {
+    setFavorites((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(oldIndex, 1);
+      next.splice(newIndex, 0, item);
+      localStorage.setItem(KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  return { favorites, toggle, isFavorite, reorder };
 }

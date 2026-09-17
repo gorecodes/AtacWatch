@@ -63,16 +63,26 @@ function FavoriteCard({ stop_id, name }: { stop_id: string; name: string }) {
   );
 }
 
+const HOME_MAX = 3;
+
 export default function FavoriteStops() {
   const { favorites } = useFavorites();
 
   if (favorites.length === 0) return null;
 
+  const shown = favorites.slice(0, HOME_MAX);
+  const extra = favorites.length - HOME_MAX;
+
   return (
     <section>
-      <h2 className="mb-1 text-[15px] font-semibold text-neutral-900">Preferiti</h2>
+      <div className="mb-1 flex items-baseline justify-between">
+        <h2 className="text-[15px] font-semibold text-neutral-900">Preferiti</h2>
+        <Link href="/favorites" className="text-[13px] text-neutral-500 active:text-neutral-900">
+          {extra > 0 ? `Vedi tutti (${favorites.length})` : "Gestisci"}
+        </Link>
+      </div>
       <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
-        {favorites.map((f) => (
+        {shown.map((f) => (
           <li key={f.stop_id}>
             <FavoriteCard stop_id={f.stop_id} name={f.name} />
           </li>
