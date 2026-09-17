@@ -135,7 +135,11 @@ export async function ingestStatic(opts: {
   const res = await fetch(GTFS_URL);
   if (!res.ok) throw new Error(`download fallito: HTTP ${res.status}`);
   const buffer = Buffer.from(await res.arrayBuffer());
-  log(`  zip: ${(buffer.length / 1e6).toFixed(1)} MB`);
+  // Quando romamobilita.it ha pubblicato questo zip: serve per distinguere
+  // "l'ETL non gira" da "l'ETL gira ma il feed è fermo", che sono due guasti
+  // diversi e si vedono allo stesso modo nei dati.
+  const lastModified = res.headers.get("last-modified");
+  log(`  zip: ${(buffer.length / 1e6).toFixed(1)} MB${lastModified ? ` — pubblicato ${lastModified}` : ""}`);
 
   const zip = await openZip(buffer);
   const entries = await collectEntries(zip);
@@ -236,6 +240,22 @@ export async function ingestStatic(opts: {
       await tx`set local statement_timeout = 0`;
       await tx`select rebuild_static_from_staging()`;
     });
+
+    // Traccia dell'ETL, accanto a quelle che il worker scrive per i feed in
+    // tempo reale. Prima non c'era: per sapere se il GTFS aveva girato bisognava
+    // andare a leggere il journal di systemd, e i log lì durano quanto la
+    // rotazione decide. Una riga nel database risponde alla domanda con una
+    // query, e sopravvive ai riavvii.
+    // Va DOPO il rebuild: scritta prima direbbe "fatto" anche se poi la
+    // transazione fallisce.
+    await sql`
+      insert into feed_meta (feed, last_fetch, last_modified, entity_count)
+      values ('static', now(), ${lastModified}, ${stopTimes})
+      on conflict (feed) do update set
+        last_fetch    = excluded.last_fetch,
+        last_modified = excluded.last_modified,
+        entity_count  = excluded.entity_count
+    `;
 
     const durationMs = Date.now() - started;
     log(`Fatto in ${(durationMs / 1000).toFixed(1)}s`);
