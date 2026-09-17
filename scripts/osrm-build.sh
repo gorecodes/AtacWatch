@@ -34,6 +34,16 @@ if [ ! -s "$SRC/roma.osm.pbf" ]; then
 fi
 
 mkdir -p "$DEST"
+
+# Se il servizio è stato avviato prima che questa cartella esistesse, Docker
+# l'ha creata lui e appartiene a root: mkdir non se ne lamenta e l'errore
+# arriva più tardi come un "Permission denied" del cp, che non dice perché.
+if [ ! -w "$DEST" ]; then
+  echo "La cartella $DEST non è scrivibile: l'ha creata Docker come root." >&2
+  echo "Rimuovila e rilancia:  sudo rm -rf '$DEST' && bash $0 $SRC" >&2
+  exit 1
+fi
+
 cp "$SRC/roma.osm.pbf" "$DEST/"
 
 osrm() { docker run --rm -v "$DEST:/data" "$IMG" "$@"; }
