@@ -7,7 +7,8 @@ import { usePolling, useNow } from "@/lib/usePolling";
 import { useFavorites } from "@/lib/favorites";
 import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
-import { BackGlyph, StarGlyph, LiveBeacon } from "./Glyphs";
+import { StarGlyph, LiveBeacon } from "./Glyphs";
+import BackButton from "./BackButton";
 import BellButton from "./BellButton";
 import Skeleton from "./Skeleton";
 
@@ -52,14 +53,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           fermata, quindi è un dato e non un dettaglio tecnico. */}
       <header className="px-4 pb-1 pt-4">
         <div className="mb-2.5 flex items-center justify-between">
-          <Link
-            href="/"
-            aria-label="Torna alla home"
-            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-500 active:text-neutral-900"
-          >
-            <BackGlyph className="h-4 w-4" />
-            <span className="text-[13px]">Fermate</span>
-          </Link>
+          <BackButton />
 
           <div className="flex items-center gap-3">
             {updatedAt && !error && (

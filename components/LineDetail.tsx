@@ -1,5 +1,6 @@
 "use client";
 
+import BackButton from "./BackButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -7,7 +8,7 @@ import type { Route } from "@/lib/gtfs";
 import { routeTypeInfo, routeName, minutesUntil } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
-import { BackGlyph, ChevronGlyph, LiveDot, LiveBeacon } from "./Glyphs";
+import { ChevronGlyph, LiveDot, LiveBeacon } from "./Glyphs";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -214,14 +215,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
           aspettare. Ripeterla anche qui la trasformava in uno stile qualunque. */}
       <header className="px-4 pb-1 pt-4">
         <div className="mb-3 flex items-center justify-between">
-          <Link
-            href="/"
-            aria-label="Torna alla home"
-            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-500 active:text-neutral-900"
-          >
-            <BackGlyph className="h-4 w-4" />
-            <span className="text-[13px]">Home</span>
-          </Link>
+          <BackButton />
           {live.length > 0 && (
             <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
               <LiveBeacon />

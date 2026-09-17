@@ -1,14 +1,15 @@
 "use client";
 
+import BackButton from "./BackButton";
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+
 import dynamic from "next/dynamic";
 import type { Route } from "@/lib/gtfs";
 import { routeTypeInfo } from "@/lib/gtfs";
 import { usePolling } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
-import { BackGlyph, LiveBeacon } from "./Glyphs";
+import { LiveBeacon } from "./Glyphs";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -36,7 +37,6 @@ function minutesTo(iso: string | null): number | null {
 }
 
 export default function TripDetail({ tripId }: { tripId: string }) {
-  const router = useRouter();
   const [route, setRoute] = useState<Route | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle>(null);
   const [stops, setStops] = useState<TripStop[]>([]);
@@ -73,14 +73,7 @@ export default function TripDetail({ tripId }: { tripId: string }) {
       {/* Chiara come la pagina linea: la fascia scura è riservata alla fermata. */}
       <header className="px-4 pb-1 pt-4">
         <div className="mb-3 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            aria-label="Indietro"
-            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-500 active:text-neutral-900"
-          >
-            <BackGlyph className="h-4 w-4" />
-            <span className="text-[13px]">Indietro</span>
-          </button>
+          <BackButton />
           <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
             {vehicle ? (
               <>
