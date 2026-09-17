@@ -3,6 +3,7 @@ import { Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
 import BottomNav from "@/components/BottomNav";
+import PageTransition from "@/components/PageTransition";
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -38,7 +39,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="it" className={`h-full antialiased ${barlow.variable} ${barlowCond.variable}`}>
       <body className="min-h-full flex flex-col bg-neutral-100 text-neutral-900">
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          <PageTransition>{children}</PageTransition>
+        </main>
         <footer className="mx-auto w-full max-w-lg px-4 pb-4 pt-6 text-[11px] leading-relaxed text-neutral-400">
           <p>
             Dati di Roma Servizi per la Mobilità (ATAC, Roma TPL), licenza CC-BY-SA.

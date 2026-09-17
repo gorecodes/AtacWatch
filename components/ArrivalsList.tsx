@@ -45,24 +45,25 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
 
   return (
     <div className="mx-auto max-w-lg">
-      {/* La targa. È l'unico blocco pieno dell'app, ed è deliberato: riprende
-          l'insegna fisica della fermata, che è l'oggetto che si guarda mentre
-          si aspetta. Il numero di palina è come i romani identificano una
-          fermata, quindi qui è un dato, non un dettaglio tecnico. */}
-      <header className="bg-neutral-900 px-4 pb-4 pt-4 text-white">
+      {/* Intestazione chiara come le altre pagine. La fascia scura c'era per
+          richiamare l'insegna fisica della fermata, ma con la barra di
+          navigazione in basso le due masse scure si pesavano a vicenda. Il
+          numero di palina resta in evidenza: è come i romani identificano una
+          fermata, quindi è un dato e non un dettaglio tecnico. */}
+      <header className="px-4 pb-1 pt-4">
         <div className="mb-2.5 flex items-center justify-between">
           <Link
             href="/"
             aria-label="Torna alla home"
-            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-300 active:text-white"
+            className="-ml-2 flex h-11 items-center gap-1 rounded-full px-2.5 text-neutral-500 active:text-neutral-900"
           >
             <BackGlyph className="h-4 w-4" />
-            <span className="text-[13px]">Home</span>
+            <span className="text-[13px]">Fermate</span>
           </Link>
 
           <div className="flex items-center gap-3">
             {updatedAt && !error && (
-              <span className="flex items-center gap-1.5 text-[12px] text-neutral-400">
+              <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
                 <LiveBeacon />
                 {updatedAt.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </span>
@@ -73,7 +74,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                 aria-pressed={starred}
                 aria-label={starred ? "Rimuovi dai preferiti" : "Salva nei preferiti"}
                 className={`-mr-2.5 flex h-11 w-11 items-center justify-center rounded-full ${
-                  starred ? "text-white" : "text-neutral-400 active:bg-white/10 active:text-white"
+                  starred ? "text-brand-500 active:bg-brand-50" : "text-neutral-400 active:bg-neutral-200/60"
                 }`}
               >
                 <StarGlyph filled={starred} className="h-6 w-6" />
@@ -82,11 +83,11 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           </div>
         </div>
 
-        <h1 className="name text-[27px] font-bold leading-[1.05] tracking-tight">
+        <h1 className="name text-[27px] font-bold leading-[1.05] tracking-tight text-neutral-900">
           {stop?.name ?? "Fermata"}
         </h1>
         {stop?.code && (
-          <p className="mt-0.5 text-[13px] tabular-nums text-neutral-400">palina {stop.code}</p>
+          <p className="mt-0.5 text-[13px] tabular-nums text-neutral-500">palina {stop.code}</p>
         )}
       </header>
 

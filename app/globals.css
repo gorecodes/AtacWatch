@@ -60,6 +60,25 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Transizione tra pagine: una comparsa breve con un filo di scorrimento.
+   180ms è la soglia sotto cui il movimento si percepisce come risposta e non
+   come attesa. Si disattiva da sé con prefers-reduced-motion, gestito in
+   fondo a questo file. */
+@keyframes entrata-pagina {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.entrata-pagina {
+  animation: entrata-pagina 180ms ease-out;
+}
+
 /* I nomi di fermata e di capolinea: condensati per guadagnare caratteri. */
 .name {
   font-family: var(--font-cond);
