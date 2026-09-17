@@ -1,0 +1,15 @@
+[Unit]
+Description=AtacWatch — webhook deploy receiver
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=paolo
+EnvironmentFile=/home/paolo/atacwatch/.env.webhook
+ExecStart=/usr/bin/webhook -hooks /home/paolo/atacwatch/deploy/hooks.json -template -port 9000 -verbose
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
