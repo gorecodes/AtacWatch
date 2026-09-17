@@ -17,6 +17,22 @@
  *    percorso completamente diverso da quello con cui ci siamo saliti.
  * 3. Salire richiede un margine (MIN_TRANSFER_S), altrimenti si producono
  *    coincidenze al secondo che nella realtà si perdono.
+ *
+ * Ottimizzazione lessicografica su (orario di arrivo, numero di corse). Il
+ * solo earliest-arrival non basta: a parità di orario sceglie arbitrariamente,
+ * e "arbitrariamente" a volte è assurdo. Il caso che l'ha reso evidente:
+ * Colosseo → EUR prendeva la metro verso NORD fino a Cavour, attraversava la
+ * banchina e riprendeva quella verso sud, che passa da Colosseo un minuto
+ * dopo — stesso orario di arrivo, cinque tratte invece di tre.
+ *
+ * Il punto di salita si può quindi spostare più a valle sulla stessa corsa se
+ * costa meno cambi, ma solo finché quella corsa non ha ancora migliorato
+ * nessuna fermata (tripUsed): dopo, spostarlo produrrebbe tratte degeneri in
+ * cui si sale e si scende nello stesso punto.
+ *
+ * Resta un limite: lessicografico non è Pareto, quindi un itinerario che
+ * arriva un minuto prima con due cambi in più vince ancora. Il rimedio vero è
+ * un'ottimizzazione multi-criterio.
  */
 import type { ConnectionSet } from "./connections";
 import type { Footpaths } from "./footpaths";
@@ -82,8 +98,14 @@ export function csaEarliestArrival(
   const walkedFrom = new Int32Array(numStops).fill(-1);
   const walkSecs = new Int32Array(numStops);
 
+  /** Numero di corse usate per raggiungere la fermata: il secondo criterio. */
+  const rides = new Int32Array(numStops);
+
   const tripBoarded = new Uint8Array(cs.tripSourceId.length);
   const boardConn = new Int32Array(cs.tripSourceId.length).fill(-1);
+  const tripRides = new Int32Array(cs.tripSourceId.length);
+  /** La corsa ha già migliorato una fermata: spostarne la salita non è più sicuro. */
+  const tripUsed = new Uint8Array(cs.tripSourceId.length);
 
   // -1 = non è un'uscita; altrimenti secondi a piedi fino a destinazione.
   const egressSecs = new Int32Array(numStops).fill(-1);
@@ -101,6 +123,7 @@ export function csaEarliestArrival(
       arrivedBy[a.stop] = -1;
       walkedFrom[a.stop] = -1; // -1 con arrivedBy -1 significa "dall'origine"
       walkSecs[a.stop] = a.seconds;
+      rides[a.stop] = 0;
       if (egressSecs[a.stop] >= 0 && t + egressSecs[a.stop] < best) {
         best = t + egressSecs[a.stop];
         bestStop = a.stop;
@@ -117,19 +140,33 @@ export function csaEarliestArrival(
     scanned++;
 
     const trip = cs.tripIdx[i];
+    const ds = cs.depStop[i];
+    const salibile = earliest[ds] + MIN_TRANSFER_S <= dep;
+    const candidato = rides[ds] + 1;
+
     if (tripBoarded[trip] === 0) {
-      if (earliest[cs.depStop[i]] + MIN_TRANSFER_S > dep) continue;
+      if (!salibile) continue;
       tripBoarded[trip] = 1;
       boardConn[trip] = i;
+      tripRides[trip] = candidato;
+    } else if (salibile && tripUsed[trip] === 0 && candidato < tripRides[trip]) {
+      // Salire più a valle sulla stessa corsa costa meno cambi: è il caso
+      // "vado a nord una fermata per riprendere la stessa linea a sud".
+      boardConn[trip] = i;
+      tripRides[trip] = candidato;
     }
 
     const arr = cs.arrTime[i];
     const as = cs.arrStop[i];
-    if (arr >= earliest[as]) continue;
+    // A parità di orario vince chi ha usato meno corse.
+    if (arr > earliest[as]) continue;
+    if (arr === earliest[as] && tripRides[trip] >= rides[as]) continue;
 
     earliest[as] = arr;
     arrivedBy[as] = i;
     walkedFrom[as] = -1;
+    rides[as] = tripRides[trip];
+    tripUsed[trip] = 1;
     if (egressSecs[as] >= 0 && arr + egressSecs[as] < best) {
       best = arr + egressSecs[as];
       bestStop = as;
@@ -138,11 +175,13 @@ export function csaEarliestArrival(
     for (let k = fp.offset[as]; k < fp.offset[as + 1]; k++) {
       const to = fp.target[k];
       const t = arr + fp.seconds[k];
-      if (t >= earliest[to]) continue;
+      if (t > earliest[to]) continue;
+      if (t === earliest[to] && rides[as] >= rides[to]) continue;
       earliest[to] = t;
       arrivedBy[to] = -1;
       walkedFrom[to] = as;
       walkSecs[to] = fp.seconds[k];
+      rides[to] = rides[as];
       if (egressSecs[to] >= 0 && t + egressSecs[to] < best) {
         best = t + egressSecs[to];
         bestStop = to;
