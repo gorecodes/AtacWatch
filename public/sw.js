@@ -1,19 +1,35 @@
-// Service worker: cache "stale-while-revalidate" per la shell statica
-// + gestione notifiche push (Web Push API).
-// Le richieste /api/ NON vengono mai cacheate (dati in tempo reale).
-const CACHE = "busroma-v1";
+// Service worker: cache degli asset immutabili + notifiche push (Web Push API).
+//
+// LA STRATEGIA È DIVISA IN DUE, e la divisione è il punto importante.
+//
+// La versione precedente rispondeva `cached || network` a QUALUNQUE richiesta.
+// Dopo un deploy il documento HTML arrivava dalla cache, e un HTML vecchio
+// punta ai nomi vecchi dei file JavaScript — anch'essi in cache. Risultato:
+// servivano due ricaricamenti per vedere i cambiamenti, e nel frattempo si
+// otteneva un miscuglio di vecchio e nuovo, con pezzi dell'app aggiornati e
+// altri no.
+//
+// Ora:
+// - /_next/static/ è cache-first, ed è corretto perché quei file sono
+//   IMMUTABILI: il nome contiene un'impronta del contenuto, quindi se il
+//   contenuto cambia cambia anche l'indirizzo e non c'è nulla da invalidare.
+// - tutto il resto — il documento, il manifest, l'icona — è network-first, con
+//   la cache come riserva per quando si è offline.
+//
+// Le richieste /api/ non passano da qui: sono dati in tempo reale.
+const CACHE = "busroma-v2";
 
-self.addEventListener("install", (e) => {
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
-    ),
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
   );
-  self.clients.claim();
 });
 
 self.addEventListener("push", (e) => {
@@ -45,16 +61,34 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return; // sempre rete
 
+  // Asset con impronta nel nome: immutabili, quindi la cache è sempre giusta.
+  if (url.pathname.startsWith("/_next/static/")) {
+    e.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        const cached = await cache.match(req);
+        if (cached) return cached;
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      }),
+    );
+    return;
+  }
+
+  // Tutto il resto: prima la rete, la cache solo se la rete non c'è. È ciò che
+  // fa arrivare subito un deploy invece del secondo caricamento dopo.
   e.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(req);
-      const network = fetch(req)
-        .then((res) => {
-          if (res.ok) cache.put(req, res.clone());
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    }),
+    (async () => {
+      const cache = await caches.open(CACHE);
+      try {
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch {
+        const cached = await cache.match(req);
+        if (cached) return cached;
+        throw new Error("offline e non in cache");
+      }
+    })(),
   );
 });
