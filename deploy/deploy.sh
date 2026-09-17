@@ -45,4 +45,21 @@ for s in db app caddy worker; do
   fi
 done
 
+
+# PULIZIA, E SOLO SE IL DEPLOY È ANDATO BENE (siamo dopo la verifica).
+#
+# Ogni build lascia le immagini precedenti di app e worker come <none>, più la
+# cache di BuildKit, e nessuno le raccoglie: su una macchina con 5 GB liberi è
+# questo — non i dati — che finisce lo spazio, un centinaio di MB per deploy
+# più una cache che cresce senza tetto.
+#
+# `until=168h` tiene le immagini dell'ultima settimana: se un deploy va male si
+# può ancora ripartire dall'immagine di ieri senza rifare il build. La cache
+# resta entro 2 GB, così il build successivo è ancora veloce.
+# `|| true`: una pulizia che fallisce non deve far fallire un deploy riuscito.
+echo "[deploy] pulizia immagini e cache..."
+docker image prune -f --filter "until=168h" || true
+docker builder prune -f --keep-storage 2GB || true
+df -h / | tail -1
+
 echo "[deploy] done"
