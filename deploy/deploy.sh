@@ -7,5 +7,6 @@ cd "$REPO_DIR"
 
 echo "[deploy] $(date -u +%Y-%m-%dT%H:%M:%SZ) — pull + rebuild..."
 git pull
+docker compose down
 docker compose up -d --build
 echo "[deploy] done"
