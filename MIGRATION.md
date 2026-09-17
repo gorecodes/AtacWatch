@@ -42,9 +42,9 @@ Il progetto AtacWatch nasce su Vercel (frontend + API) + Supabase (PostgreSQL ho
 
 ## Fase 4 — Ingest statico
 
-- [ ] Eliminare `.github/workflows/ingest-static.yml`
-- [ ] Rimuovere `app/api/cron/ingest-static/route.ts` (non più necessario)
-- [ ] Documentare il deploy del timer nel README
+- [x] Eliminare `.github/workflows/ingest-static.yml`
+- [x] Rimuovere `app/api/cron/ingest-static/route.ts` (non più necessario)
+- [x] Documentare il deploy del timer in deploy/OPERATIONS.md
 
 ## Fase 5 — Deploy & CI
 

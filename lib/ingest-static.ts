@@ -1,13 +1,13 @@
 /**
- * ETL del GTFS statico di Roma -> staging Supabase -> aggregazione (opzione C).
+ * ETL del GTFS statico di Roma -> staging -> aggregazione (opzione C).
  *
- * Strategia (per stare nei limiti serverless): la funzione NON aggrega in
- * memoria. Fa streaming dello zip, inserisce a batch nelle tabelle stg_*, e
- * poi delega l'aggregazione pesante a Postgres (rebuild_static_from_staging()).
+ * Strategia: la funzione NON aggrega in memoria. Fa streaming dello zip,
+ * inserisce a batch nelle tabelle stg_*, e poi delega l'aggregazione pesante
+ * a Postgres (rebuild_static_from_staging()).
  *
  * Riutilizzata da:
- *   - scripts/ingest-static.ts        (esecuzione locale: pnpm ingest:static)
- *   - app/api/cron/ingest-static/...  (Vercel Cron giornaliero)
+ *   - scripts/ingest-static.ts  (pnpm ingest:static)
+ *   - systemd timer sul VPS     (deploy/atacwatch-ingest.{service,timer})
  */
 import postgres from "postgres";
 import yauzl from "yauzl";
