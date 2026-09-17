@@ -107,6 +107,14 @@ export function LiveDot({ className = "" }: GlyphProps) {
   );
 }
 
+export function CloseGlyph({ className = "" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
+      <path d="m5.5 5.5 9 9m0-9-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function BellGlyph({ filled, className = "" }: GlyphProps & { filled: boolean }) {
   return (
     <svg viewBox="0 0 20 20" fill={filled ? "currentColor" : "none"} aria-hidden className={className}>

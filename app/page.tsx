@@ -1,6 +1,7 @@
 import SearchBar from "@/components/SearchBar";
 import NearbyArrivals from "@/components/NearbyArrivals";
 import FavoriteStops from "@/components/FavoriteStops";
+import SupportBanner from "@/components/SupportBanner";
 
 export default function HomePage() {
   return (
@@ -21,6 +22,7 @@ export default function HomePage() {
       <div className="mt-6 space-y-7">
         <FavoriteStops />
         <NearbyArrivals />
+        <SupportBanner />
       </div>
     </div>
   );
