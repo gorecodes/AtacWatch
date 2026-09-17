@@ -81,7 +81,7 @@ export default function TripDetail({ tripId }: { tripId: string }) {
                 Mezzo localizzato
               </>
             ) : (
-              "Mezzo non localizzato"
+              "Mezzo fantasma"
             )}
           </span>
         </div>
@@ -116,7 +116,7 @@ export default function TripDetail({ tripId }: { tripId: string }) {
       )}
       {loaded && !error && stops.length === 0 && (
         <p className="px-4 py-6 text-sm text-neutral-500">
-          Nessuna previsione disponibile per questa corsa (potrebbe essere terminata o senza dati in tempo reale).
+          Di questa corsa non si sa più niente. Forse è già finita.
         </p>
       )}
 

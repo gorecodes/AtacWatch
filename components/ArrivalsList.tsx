@@ -97,13 +97,13 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
       {loading && arrivals.length === 0 && <Skeleton righe={5} className="px-4" />}
       {error && arrivals.length === 0 && (
         <p className="px-4 py-6 text-[14px] text-neutral-500">
-          Non riesco a leggere gli arrivi.{" "}
+          Gli arrivi non arrivano.{" "}
           <button onClick={load} className="font-medium text-brand-600 underline underline-offset-2">Riprova</button>
         </p>
       )}
       {!loading && !error && arrivals.length === 0 && (
         <p className="px-4 py-6 text-[14px] text-neutral-500">
-          Nessun passaggio previsto nei prossimi 90 minuti da questa fermata.
+          Niente. Il vuoto. Per i prossimi 90 minuti qui non passa nulla.
         </p>
       )}
 

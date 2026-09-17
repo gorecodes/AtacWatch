@@ -214,13 +214,13 @@ export default function JourneyPlanner() {
 
       {errore === "vuoto" && (
         <p className="py-6 text-[14px] text-neutral-600">
-          Nessun percorso trovato. Può capitare di notte, o se uno dei due capi è
-          troppo lontano da qualsiasi fermata.
+          Da qui non ci arrivi. Di notte Roma si restringe, oppure uno dei due capi
+          è lontano da qualsiasi fermata.
         </p>
       )}
       {errore === "guasto" && (
         <p className="py-6 text-[14px] text-neutral-600">
-          Non riesco a calcolare il percorso.{" "}
+          Il calcolo si è arreso.{" "}
           <button onClick={cerca} className="font-medium text-brand-600 underline underline-offset-2">
             Riprova
           </button>

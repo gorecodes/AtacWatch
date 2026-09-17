@@ -1,4 +1,5 @@
 import SearchBar from "@/components/SearchBar";
+import Benvenuto from "@/components/Benvenuto";
 import ThemeToggle from "@/components/ThemeToggle";
 import NearbyArrivals from "@/components/NearbyArrivals";
 import FavoriteStops from "@/components/FavoriteStops";
@@ -18,6 +19,8 @@ export default function HomePage() {
           <ThemeToggle />
         </div>
       </header>
+
+      <Benvenuto />
 
       <SearchBar />
 

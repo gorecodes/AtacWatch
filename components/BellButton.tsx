@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { BellGlyph } from "./Glyphs";
+import { tocco } from "@/lib/tocco";
 
 const STORAGE_KEY = "atw-push-subs";
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
@@ -74,6 +75,7 @@ export default function BellButton({
         subs.delete(key);
         saveSubs(subs);
         setSubscribed(false);
+        tocco();
       } else {
         // Subscribe
         const permission = await Notification.requestPermission();
@@ -101,6 +103,8 @@ export default function BellButton({
         subs.add(key);
         saveSubs(subs);
         setSubscribed(true);
+        // Doppio: la notifica è attiva, ed è la conferma che conta di più.
+        tocco("doppio");
       }
     } catch (e) {
       console.error("[BellButton]", e);

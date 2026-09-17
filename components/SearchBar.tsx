@@ -161,7 +161,7 @@ export default function SearchBar() {
           {loading && empty && <p className="text-[14px] text-neutral-500">Cerco…</p>}
           {empty && !loading && (
             <p className="text-[14px] text-neutral-500">
-              Nessuna linea o fermata con questo nome.
+              Non esiste. O si chiama diversamente.
             </p>
           )}
 

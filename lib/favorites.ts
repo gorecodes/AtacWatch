@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { tocco } from "./tocco";
 
 export type FavoriteStop = {
   stop_id: string;
@@ -26,6 +27,7 @@ export function useFavorites() {
   }, []);
 
   function toggle(stop: FavoriteStop) {
+    tocco();
     setFavorites((prev) => {
       const exists = prev.some((f) => f.stop_id === stop.stop_id);
       const next = exists
@@ -41,6 +43,7 @@ export function useFavorites() {
   }
 
   function reorder(oldIndex: number, newIndex: number) {
+    tocco();
     setFavorites((prev) => {
       const next = [...prev];
       const [item] = next.splice(oldIndex, 1);

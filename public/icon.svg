@@ -1,9 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
-  <rect x="146" y="96" width="220" height="250" rx="44" fill="#0ea5e9"/>
-  <rect x="170" y="140" width="172" height="96" rx="16" fill="#0a0a0a"/>
-  <circle cx="192" cy="300" r="22" fill="#0a0a0a"/>
-  <circle cx="320" cy="300" r="22" fill="#0a0a0a"/>
-  <rect x="150" y="346" width="40" height="70" rx="12" fill="#0ea5e9"/>
-  <rect x="322" y="346" width="40" height="70" rx="12" fill="#0ea5e9"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bus Roma">
+  <!--
+    Il marchio è una PALINA, l'oggetto che si guarda mentre si aspetta, e
+    riprende la stessa forma che l'app usa per i numeri di linea: targhetta
+    rossa ATAC, angoli appena smussati, palo che scende.
+
+    Fondo basalto e non bianco: sulla schermata di un telefono l'icona deve
+    reggere sia in chiaro che in scuro, e un fondo chiaro sparirebbe contro
+    metà degli sfondi.
+  -->
+  <rect width="512" height="512" rx="108" fill="#1B2027"/>
+
+  <!-- Il palo. -->
+  <rect x="238" y="196" width="36" height="216" rx="10" fill="#8E979C"/>
+  <!-- Base a terra. -->
+  <rect x="188" y="400" width="136" height="26" rx="13" fill="#8E979C"/>
+
+  <!-- La targhetta, con il rosso dei mezzi. -->
+  <rect x="86" y="86" width="340" height="132" rx="14" fill="#C4161C"/>
+
+  <!--
+    Due righe sulla targhetta invece di una scritta: a 48 pixel un testo
+    diventa una macchia, mentre due barre restano leggibili come "insegna con
+    delle corse sopra".
+  -->
+  <rect x="122" y="124" width="204" height="22" rx="11" fill="#FFFFFF"/>
+  <rect x="122" y="164" width="140" height="22" rx="11" fill="#FFFFFF" opacity="0.72"/>
+
+  <!-- Il pallino del dato vivo, nello stesso verde dell'interfaccia. -->
+  <circle cx="368" cy="175" r="21" fill="#00875A"/>
 </svg>

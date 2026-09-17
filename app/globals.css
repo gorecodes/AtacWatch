@@ -137,6 +137,10 @@ body {
   letter-spacing: 0.005em;
 }
 
+.visto .benvenuto {
+  display: none;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

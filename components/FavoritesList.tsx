@@ -87,11 +87,11 @@ export default function FavoritesList() {
   if (favorites.length === 0) {
     return (
       <p className="py-8 text-[14px] text-neutral-500">
-        Nessuna fermata preferita ancora.{" "}
+        Ancora nessun preferito.{" "}
         <Link href="/" className="text-brand-600 underline underline-offset-2">
           Cerca una fermata
         </Link>{" "}
-        e tocca la stella per salvarla.
+        e toccale la stella.
       </p>
     );
   }

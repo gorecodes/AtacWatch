@@ -118,7 +118,7 @@ export default function NearbyArrivals() {
         const isTimeout = err instanceof Error && err.name === "AbortError";
         return {
           kind: "error",
-          msg: isTimeout ? "La rete non risponde" : "Non riesco a leggere le corse",
+          msg: isTimeout ? "La rete fa finta di niente" : "Le corse non si trovano",
         };
       });
     }
@@ -165,10 +165,10 @@ export default function NearbyArrivals() {
           <PinGlyph className="h-5 w-5 shrink-0 text-brand-500" />
           <span>
             <span className="block text-[15px] font-medium text-neutral-900">
-              Trova le fermate vicine
+              Che passa qui intorno
             </span>
             <span className="block text-[13px] text-neutral-500">
-              Uso la posizione solo sul momento, non la salvo
+              La uso sul momento e non la salvo
             </span>
           </span>
         </button>
@@ -197,8 +197,8 @@ export default function NearbyArrivals() {
 
       {state.kind === "ok" && state.arrivals.length === 0 && (
         <p className="py-3 text-[14px] text-neutral-500">
-          Nessun mezzo passa entro 700 metri nella prossima mezz&apos;ora. Di notte
-          o in zone periferiche capita: prova a cercare la linea per numero.
+          Entro 700 metri, nella prossima mezz&apos;ora, non passa nulla. Di notte e in
+          periferia Roma si restringe: cerca la linea per numero.
         </p>
       )}
 
