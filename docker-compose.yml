@@ -53,6 +53,8 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp" # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN richiesto (es: atacwatch.example.com)}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -61,6 +63,23 @@ services:
       - app
     networks:
       - internal
+
+  # Servizio usa-e-getta per applicare le migrations.
+  # Uso: docker compose run --rm migrate
+  migrate:
+    image: postgis/postgis:17-3.5
+    environment:
+      DATABASE_URL: postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch
+    volumes:
+      - ./supabase/migrations:/migrations:ro
+      - ./scripts/migrate.sh:/migrate.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles: ["tools"]
+    entrypoint: ["bash", "/migrate.sh"]
 
 volumes:
   pgdata:
