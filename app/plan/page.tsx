@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import JourneyPlanner from "@/components/JourneyPlanner";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata = { title: "Percorsi — Bus Roma" };
 
@@ -15,6 +16,12 @@ export default function PlanPage() {
             scriverlo che far scoprire i limiti a chi sta correndo. */}
         <span className="rounded-[3px] bg-brand-500 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
           Beta
+        </span>
+        {/* Il tasto del tema è l'ultimo elemento in alto a destra su OGNI
+            pagina: stava solo sulla home, e chi era altrove doveva tornare
+            indietro per cambiarlo. */}
+        <span className="ml-auto">
+          <ThemeToggle />
         </span>
       </div>
       <p className="mb-4 text-[13px] text-neutral-600">

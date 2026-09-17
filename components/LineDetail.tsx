@@ -9,6 +9,7 @@ import { routeTypeInfo, routeName, minutesUntil } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
 import { ChevronGlyph, LiveDot, LiveBeacon } from "./Glyphs";
+import ThemeToggle from "./ThemeToggle";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -216,12 +217,17 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
       <header className="px-4 pb-1 pt-4">
         <div className="mb-3 flex items-center justify-between">
           <BackButton />
-          {live.length > 0 && (
-            <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
-              <LiveBeacon />
-              {live.length} {live.length === 1 ? "mezzo in linea" : "mezzi in linea"}
-            </span>
-          )}
+          {/* Il tasto del tema chiude la riga su ogni pagina; il contatore dei
+              mezzi gli sta a sinistra e può mancare. */}
+          <div className="flex items-center gap-3">
+            {live.length > 0 && (
+              <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
+                <LiveBeacon />
+                {live.length} {live.length === 1 ? "mezzo in linea" : "mezzi in linea"}
+              </span>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

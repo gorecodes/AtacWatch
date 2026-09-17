@@ -10,6 +10,7 @@ import Eta from "./Eta";
 import { StarGlyph, LiveBeacon } from "./Glyphs";
 import BackButton from "./BackButton";
 import BellButton from "./BellButton";
+import ThemeToggle from "./ThemeToggle";
 import Skeleton from "./Skeleton";
 
 type StopInfo = { stop_id: string; name: string; code: string | null } | null;
@@ -67,13 +68,17 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                 onClick={() => toggle({ stop_id: stopId, name: stop.name, code: stop.code ?? null })}
                 aria-pressed={starred}
                 aria-label={starred ? "Rimuovi dai preferiti" : "Salva nei preferiti"}
-                className={`-mr-2.5 flex h-11 w-11 items-center justify-center rounded-full ${
+                className={`flex h-11 w-11 items-center justify-center rounded-full ${
                   starred ? "text-brand-500 active:bg-brand-50" : "text-neutral-400 active:bg-neutral-200/60"
                 }`}
               >
                 <StarGlyph filled={starred} className="h-6 w-6" />
               </button>
             )}
+            {/* Ultimo a destra, come su ogni pagina: la stella riguarda questa
+                fermata, il tema riguarda l'app, e l'ordine tiene separate le
+                due cose. */}
+            <ThemeToggle />
           </div>
         </div>
 
