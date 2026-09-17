@@ -38,7 +38,7 @@ export default function SupportBanner() {
         >
           Offrimi un caffè
         </a>{" "}
-        se ti sta risparmiando qualche attesa.
+        se ti è utile.
       </p>
       <button
         onClick={dismiss}
