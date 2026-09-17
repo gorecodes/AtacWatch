@@ -46,17 +46,17 @@ Il progetto AtacWatch nasce su Vercel (frontend + API) + Supabase (PostgreSQL ho
 - [x] Rimuovere `app/api/cron/ingest-static/route.ts` (non più necessario)
 - [x] Documentare il deploy del timer in deploy/OPERATIONS.md
 
-## Fase 5 — CI/CD (build & publish immagine)
+## Fase 5 — ~~CI/CD (build & publish immagine)~~ Eliminata
 
-- [x] Creare GitHub Action: build immagine Docker → push su GHCR
-- [ ] Aggiornare `README.md` con istruzioni VPS
+VPS da 4GB: build diretto sul server con `docker compose up -d --build`.
+Nessuna workflow GitHub Actions necessaria.
 
 ## Fase 6 — Deploy su VPS via SSH
 
 - [ ] Configurare accesso SSH (chiave deploy, utente dedicato)
 - [ ] Prima installazione: clone repo, `.env`, `docker compose up -d`, migrate
 - [ ] Installare e abilitare systemd timer (`atacwatch-ingest.timer`)
-- [ ] Aggiungere step SSH all'Action di Fase 5 per deploy automatico al push su `main`
+- [ ] ~~Aggiungere step SSH all'Action di Fase 5~~ (eliminato con Fase 5)
 - [ ] Smoke test: verifica app, worker RT, ETL statico
 
 ---

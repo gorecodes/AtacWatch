@@ -18,7 +18,6 @@ services:
     # Porta NON esposta all'esterno: accessibile solo nella rete Docker interna.
 
   app:
-    image: ghcr.io/gorecodes/atacwatch-app:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -34,7 +33,6 @@ services:
     #       prima che l'app possa avviarsi correttamente.
 
   worker:
-    image: ghcr.io/gorecodes/atacwatch-worker:latest
     build:
       context: .
       dockerfile: Dockerfile.worker
