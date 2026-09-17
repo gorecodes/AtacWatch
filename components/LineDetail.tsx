@@ -209,18 +209,21 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
 
   return (
     <div className="mx-auto max-w-lg">
-      <header className="bg-neutral-900 px-4 pb-4 pt-4 text-white">
-        <div className="mb-2.5 flex items-center justify-between">
+      {/* Intestazione chiara: la targa scura resta solo sulla pagina fermata,
+          dove la metafora della palina è letterale e dove si sta fermi ad
+          aspettare. Ripeterla anche qui la trasformava in uno stile qualunque. */}
+      <header className="px-4 pb-1 pt-4">
+        <div className="mb-3 flex items-center justify-between">
           <Link
             href="/"
             aria-label="Torna alla home"
-            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-300 active:text-white"
+            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-500 active:text-neutral-900"
           >
             <BackGlyph className="h-4 w-4" />
             <span className="text-[13px]">Home</span>
           </Link>
           {live.length > 0 && (
-            <span className="flex items-center gap-1.5 text-[12px] text-neutral-300">
+            <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
               <LiveBeacon />
               {live.length} {live.length === 1 ? "mezzo in linea" : "mezzi in linea"}
             </span>
@@ -238,13 +241,13 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
             />
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="name truncate text-[19px] font-semibold leading-tight">
+            <h1 className="name truncate text-[19px] font-semibold leading-tight text-neutral-900">
               {route ? routeName(route.long_name, route.type) : "…"}
             </h1>
             {/* Il tipo sotto solo se il titolo è un nome vero, altrimenti
                 ripeteremmo "Bus" due volte di fila. */}
             {route?.long_name?.trim() && (
-              <p className="text-[13px] text-neutral-400">{routeTypeInfo(route.type).label}</p>
+              <p className="text-[13px] text-neutral-500">{routeTypeInfo(route.type).label}</p>
             )}
           </div>
         </div>

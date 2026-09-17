@@ -70,17 +70,18 @@ export default function TripDetail({ tripId }: { tripId: string }) {
 
   return (
     <div className="mx-auto max-w-lg">
-      <header className="bg-neutral-900 px-4 pb-4 pt-4 text-white">
-        <div className="mb-2.5 flex items-center justify-between">
+      {/* Chiara come la pagina linea: la fascia scura è riservata alla fermata. */}
+      <header className="px-4 pb-1 pt-4">
+        <div className="mb-3 flex items-center justify-between">
           <button
             onClick={() => router.back()}
             aria-label="Indietro"
-            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-300 active:text-white"
+            className="-ml-1.5 flex items-center gap-1 rounded p-1.5 text-neutral-500 active:text-neutral-900"
           >
             <BackGlyph className="h-4 w-4" />
             <span className="text-[13px]">Indietro</span>
           </button>
-          <span className="flex items-center gap-1.5 text-[12px] text-neutral-300">
+          <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
             {vehicle ? (
               <>
                 <LiveBeacon />
@@ -95,10 +96,10 @@ export default function TripDetail({ tripId }: { tripId: string }) {
         <div className="flex items-center gap-3">
           {route && <RouteBadge shortName={route.short_name} type={route.type} color={route.color} textColor={route.text_color} size="lg" />}
           <div className="min-w-0 flex-1">
-            <h1 className="name truncate text-[19px] font-semibold leading-tight">
+            <h1 className="name truncate text-[19px] font-semibold leading-tight text-neutral-900">
               {destination ?? "Corsa"}
             </h1>
-            {route && <p className="text-[13px] text-neutral-400">{routeTypeInfo(route.type).label}</p>}
+            {route && <p className="text-[13px] text-neutral-500">{routeTypeInfo(route.type).label}</p>}
           </div>
         </div>
       </header>
