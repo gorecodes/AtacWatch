@@ -8,7 +8,7 @@ After=docker.service network-online.target
 Type=oneshot
 WorkingDirectory=/opt/atacwatch
 # Esegue l'ingest in un container usa-e-getta; usa la stessa immagine del worker.
-ExecStart=docker compose run --rm worker pnpm ingest:static
+ExecStart=docker compose run --rm worker node_modules/.bin/tsx scripts/ingest-static.ts
 StandardOutput=journal
 StandardError=journal
 # Timeout generoso: il download del GTFS + rebuild Postgres può durare qualche minuto.

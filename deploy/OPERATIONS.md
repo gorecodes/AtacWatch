@@ -221,7 +221,7 @@ sudo journalctl -u atacwatch-ingest.service -f
 
 ```bash
 cd /opt/atacwatch
-docker compose run --rm worker pnpm ingest:static
+docker compose run --rm worker node_modules/.bin/tsx scripts/ingest-static.ts
 ```
 
 ---
@@ -241,7 +241,7 @@ docker compose logs -f worker
 docker compose run --rm migrate
 
 # ETL statico manuale
-docker compose run --rm worker pnpm ingest:static
+docker compose run --rm worker node_modules/.bin/tsx scripts/ingest-static.ts
 
 # Shell nel DB
 docker compose exec db psql -U atacwatch -d atacwatch
