@@ -48,7 +48,7 @@ Il progetto AtacWatch nasce su Vercel (frontend + API) + Supabase (PostgreSQL ho
 
 ## Fase 5 — CI/CD (build & publish immagine)
 
-- [ ] Creare GitHub Action: build immagine Docker → push su GHCR
+- [x] Creare GitHub Action: build immagine Docker → push su GHCR
 - [ ] Aggiornare `README.md` con istruzioni VPS
 
 ## Fase 6 — Deploy su VPS via SSH
