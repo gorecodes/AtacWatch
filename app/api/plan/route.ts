@@ -91,14 +91,17 @@ export async function GET(req: Request) {
     const dateISO = romeDate(atMs);
 
     const cs = await loadConnections(sql, dateISO);
-    const [fp, access, egress, direttoM] = await Promise.all([
+    const [fp, access, egress, diretto] = await Promise.all([
       loadFootpaths(sql, cs, dateISO),
-      findAccess(sql, cs, fromLat, fromLon),
-      findAccess(sql, cs, toLat, toLon),
+      findAccess(sql, cs, fromLat, fromLon, undefined, "andata"),
+      // "ritorno": dalle fermate alla destinazione. A piedi la differenza è
+      // minima, ma sottopassi e sensi unici pedonali non sono simmetrici.
+      findAccess(sql, cs, toLat, toLon, undefined, "ritorno"),
       walkDistance(sql, fromLat, fromLon, toLat, toLon),
     ]);
 
-    const soloPiediS = walkSeconds(direttoM);
+    const direttoM = diretto.meters;
+    const soloPiediS = diretto.seconds;
     const camminabile = direttoM <= MAX_WALK_ALT_M;
 
     // Raggio stretto: obbliga a salire vicino al punto di partenza invece di

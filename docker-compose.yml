@@ -17,6 +17,23 @@ services:
       - internal
     # Porta NON esposta all'esterno: accessibile solo nella rete Docker interna.
 
+  # Distanze a piedi reali per il calcolo percorsi. La linea d'aria non
+  # sbagliava solo il numero mostrato: su SALARIA/CASTEL GIUBILEO dava 396
+  # metri dove la strada reale è 4475, cioè sei minuti invece di 56, e il
+  # router costruiva itinerari impossibili su quel dato.
+  #
+  # Qui gira solo osrm-routed, che mappa i dati da disco: misurato, 163 MB di
+  # memoria. La preparazione (osrm-extract, che arriva a 722 MB di picco) si fa
+  # con scripts/osrm-build.sh, una volta, e produce i file in ./osrm.
+  osrm:
+    image: osrm/osrm-backend
+    restart: unless-stopped
+    command: osrm-routed --algorithm mld --max-table-size 200 /data/roma.osrm
+    volumes:
+      - ./osrm:/data:ro
+    networks:
+      - internal
+
   app:
     build:
       context: .
@@ -26,6 +43,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch
+      OSRM_URL: http://osrm:5000
     depends_on:
       db:
         condition: service_healthy
