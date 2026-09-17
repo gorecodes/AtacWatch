@@ -140,7 +140,7 @@ export default function NearbyArrivals() {
                   aria-pressed={sortBy === key}
                   className={`px-2 py-0.5 ${
                     sortBy === key
-                      ? "bg-neutral-900 font-medium text-white"
+                      ? "bg-neutral-900 font-medium text-neutral-50"
                       : "text-neutral-500"
                   }`}
                 >

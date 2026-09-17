@@ -132,8 +132,12 @@ export function etaLabel(minutes: number): string {
  * le targhette nere su fondo chiaro di una palina reale.
  */
 export function routeBadgeStyle(color: string | null, textColor: string | null) {
-  const bg = color ? `#${color.replace("#", "")}` : "#1B2027";
-  const fg = textColor ? `#${textColor.replace("#", "")}` : "#FFFFFF";
+  // Il ripiego usa le VARIABILI della scala neutra, non un esadecimale fisso:
+  // in modalità scura la scala si ribalta, e un basalto fisso coinciderebbe
+  // con lo sfondo facendo sparire la targhetta di ogni autobus. I colori che
+  // arrivano dal GTFS (le metro) restano letterali: sono identità di linea.
+  const bg = color ? `#${color.replace("#", "")}` : "var(--color-neutral-900)";
+  const fg = textColor ? `#${textColor.replace("#", "")}` : "var(--color-neutral-100)";
   return { backgroundColor: bg, color: fg };
 }
 

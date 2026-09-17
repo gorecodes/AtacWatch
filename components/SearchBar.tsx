@@ -98,7 +98,7 @@ export default function SearchBar() {
           inputMode="search"
           autoComplete="off"
           placeholder="Cerca una linea o una fermata"
-          className="w-full rounded border border-neutral-300 bg-white py-2.5 pl-10 pr-3 text-[16px] outline-none placeholder:text-neutral-400 focus:border-neutral-900"
+          className="w-full rounded border border-neutral-300 bg-neutral-50 py-2.5 pl-10 pr-3 text-[16px] outline-none placeholder:text-neutral-400 focus:border-neutral-900"
         />
       </div>
       {/* Il suggerimento su cosa si può cercare serve al primo uso; dopo, le

@@ -143,7 +143,7 @@ export default function JourneyPlanner() {
       <button
         onClick={cerca}
         disabled={!from || !to || state === "loading"}
-        className="mt-4 w-full rounded bg-neutral-900 py-2.5 text-[15px] font-semibold text-white disabled:bg-neutral-300"
+        className="mt-4 w-full rounded bg-neutral-900 py-2.5 text-[15px] font-semibold text-neutral-50 disabled:bg-neutral-300"
       >
         {state === "loading" ? "Calcolo…" : "Cerca il percorso"}
       </button>

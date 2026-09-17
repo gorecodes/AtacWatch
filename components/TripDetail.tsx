@@ -137,7 +137,7 @@ export default function TripDetail({ tripId }: { tripId: string }) {
               <Link href={`/stop/${encodeURIComponent(s.stop_id)}`} className="flex items-center gap-3 py-2 active:opacity-70">
                 <span className="relative flex w-4 justify-center">
                   <span className="absolute inset-y-0 w-0.5 bg-neutral-300" style={{ top: i === 0 ? "50%" : 0, bottom: i === stops.length - 1 ? "50%" : 0 }} />
-                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${isNext ? "border-live-500 bg-live-500" : passed ? "border-neutral-300 bg-neutral-300" : "border-neutral-400 bg-white"}`} />
+                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${isNext ? "border-live-500 bg-live-500" : passed ? "border-neutral-300 bg-neutral-300" : "border-neutral-400 bg-neutral-50"}`} />
                 </span>
                 <span className={`name min-w-0 flex-1 truncate text-[15px] ${passed ? "text-neutral-400" : "text-neutral-900"}`}>
                   {s.name}

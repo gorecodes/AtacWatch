@@ -1,4 +1,5 @@
 import SearchBar from "@/components/SearchBar";
+import ThemeToggle from "@/components/ThemeToggle";
 import NearbyArrivals from "@/components/NearbyArrivals";
 import FavoriteStops from "@/components/FavoriteStops";
 import SupportBanner from "@/components/SupportBanner";
@@ -8,11 +9,14 @@ export default function HomePage() {
     <div className="mx-auto max-w-lg px-4 pt-5">
       {/* Intestazione su una riga sola: prima i crediti e il sottotitolo si
           mangiavano 130px dei 900 di viewport, sopra la piega. */}
-      <header className="mb-4 flex items-baseline justify-between gap-3">
+      <header className="mb-4 flex items-center justify-between gap-3">
         <h1 className="name text-[26px] font-bold leading-none tracking-tight text-neutral-900">
           Bus Roma
         </h1>
-        <p className="shrink-0 text-[13px] text-neutral-500">Roma in tempo reale</p>
+        <div className="flex shrink-0 items-center gap-1">
+          <p className="text-[13px] text-neutral-500">Roma in tempo reale</p>
+          <ThemeToggle />
+        </div>
       </header>
 
       <SearchBar />

@@ -55,6 +55,46 @@
   color-scheme: light;
 }
 
+/*
+ * Modalità scura. Non è un secondo foglio di stile: si RIBALTA la scala
+ * neutra, e siccome tutta l'interfaccia usa neutral-100 per lo sfondo e
+ * neutral-900 per l'inchiostro, l'app intera segue senza che i componenti
+ * sappiano nulla del tema.
+ *
+ * I valori non sono l'inverso aritmetico dei chiari: uno sfondo nero puro e un
+ * testo bianco puro vibrano, quindi si parte da un grigio bluastro e
+ * l'inchiostro si ferma prima del bianco.
+ */
+.dark {
+  color-scheme: dark;
+
+  --color-neutral-50: #14181d;
+  --color-neutral-100: #181d23; /* sfondo pagina */
+  --color-neutral-200: #2a313a; /* filetti: un filo più marcati che in chiaro,
+                                   perché su fondo scuro spariscono prima */
+  --color-neutral-300: #38414c;
+  --color-neutral-400: #7c8791; /* testo silenzioso */
+  --color-neutral-500: #98a3ae; /* testo secondario */
+  --color-neutral-600: #b8c2cb;
+  --color-neutral-700: #d2dae1;
+  --color-neutral-800: #e4eaef;
+  --color-neutral-900: #f1f5f8; /* inchiostro, non bianco puro */
+  --color-neutral-950: #ffffff;
+
+  /* Il rosso ATAC e il verde "dato vivo" vanno schiariti: i valori densi
+     scelti per reggere il sole su fondo chiaro, su fondo scuro diventano
+     macchie illeggibili. */
+  --color-brand-50: #2a1416;
+  --color-brand-500: #f1545a;
+  --color-brand-600: #f3696e;
+  --color-brand-700: #f58186;
+
+  --color-live-50: #10231b;
+  --color-live-500: #2fc98a;
+  --color-live-600: #47d69a;
+  --color-live-700: #61dfa8;
+}
+
 html,
 body {
   font-family: var(--font-sans);

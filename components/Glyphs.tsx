@@ -107,6 +107,33 @@ export function LiveDot({ className = "" }: GlyphProps) {
   );
 }
 
+export function SunGlyph({ className = "" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
+      <circle cx="10" cy="10" r="3.6" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M10 1.8v1.8M10 16.4v1.8M1.8 10h1.8M16.4 10h1.8M4.2 4.2l1.3 1.3M14.5 14.5l1.3 1.3M15.8 4.2l-1.3 1.3M5.5 14.5l-1.3 1.3"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function MoonGlyph({ className = "" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
+      <path
+        d="M16.2 12.6a6.8 6.8 0 0 1-8.8-8.8 7 7 0 1 0 8.8 8.8Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /** Un percorso: due capi e una linea spezzata che li unisce. */
 export function RouteGlyph({ className = "" }: GlyphProps) {
   return (

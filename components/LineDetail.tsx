@@ -266,7 +266,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
               aria-pressed={d.direction_id === dir}
               className={`name rounded border px-2.5 py-1.5 text-left text-[13px] leading-snug ${
                 d.direction_id === dir
-                  ? "border-neutral-900 bg-neutral-900 font-semibold text-white"
+                  ? "border-neutral-900 bg-neutral-900 font-semibold text-neutral-50"
                   : "border-neutral-300 text-neutral-600"
               }`}
             >
@@ -306,7 +306,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
                     className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[15px] tabular-nums ${
                       d.is_realtime
                         ? "border-live-500 font-semibold text-live-600"
-                        : "border-neutral-200 bg-white text-neutral-600"
+                        : "border-neutral-200 bg-neutral-50 text-neutral-600"
                     }`}
                     title={d.is_realtime ? "Dato in tempo reale" : "Orario previsto"}
                   >
@@ -318,7 +318,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
             )
           )}
           {showTimetable && (
-            <div className="rounded-lg border border-neutral-200 bg-white px-3 py-2 shadow-sm">
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 shadow-sm">
               <div className="mb-2 flex gap-2">
                 {([0, 1] as const).map((offset) => (
                   <button
@@ -388,7 +388,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
               >
                 <span className="relative flex w-4 justify-center self-stretch">
                   <span className="absolute inset-y-0 w-0.5 bg-neutral-300" style={{ top: i === 0 ? "50%" : 0, bottom: i === stops.length - 1 ? "50%" : 0 }} />
-                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${here > 0 ? "border-live-500 bg-live-500" : "border-neutral-400 bg-white"}`} />
+                  <span className={`z-10 mt-2 h-2.5 w-2.5 rounded-full border-2 ${here > 0 ? "border-live-500 bg-live-500" : "border-neutral-400 bg-neutral-50"}`} />
                 </span>
                 <span className="name min-w-0 flex-1 truncate text-[15px] text-neutral-900">
                   {s.name}

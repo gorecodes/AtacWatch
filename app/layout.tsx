@@ -28,7 +28,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1B2027",
+  // Il colore della barra del browser segue la preferenza di sistema. Non può
+  // seguire il tasto, perché è un meta e non una classe: è un dettaglio
+  // cosmetico del bordo della finestra, non dell'interfaccia.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#EDEFEE" },
+    { media: "(prefers-color-scheme: dark)", color: "#181D23" },
+  ],
   width: "device-width",
   initialScale: 1,
   // Niente blocco dello zoom: il pinch-to-zoom è un requisito di accessibilità
@@ -38,6 +44,18 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="it" className={`h-full antialiased ${barlow.variable} ${barlowCond.variable}`}>
+      <head>
+        {/*
+          Il tema si applica PRIMA del disegno, altrimenti a ogni apertura si
+          vedrebbe un lampo di bianco prima che l'idratazione metta la classe.
+          Senza scelta salvata si segue il sistema.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("busroma_tema");if(t==="scuro"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-neutral-100 text-neutral-900">
         <main className="flex-1">
           <PageTransition>{children}</PageTransition>
