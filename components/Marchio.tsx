@@ -1,33 +1,33 @@
 /**
  * Il marchio per l'interfaccia: la palina, senza il riquadro di fondo.
  *
- * L'icona della schermata home (public/icon.svg) ha il fondo basalto e gli
- * angoli smussati, perché lì deve reggere contro lo sfondo di sistema. A 28
- * pixel dentro un'intestazione quel riquadro scuro peserebbe più del titolo,
- * quindi qui resta solo la sagoma: targhetta rossa, palo, e il pallino verde
- * del dato vivo.
+ * Gialla, stretta e alta su un palo visibile, come quelle di Roma. Due cose
+ * imparate disegnando l'icona grande: il rosso ATAC è il colore dei MEZZI e
+ * non dell'insegna di fermata, e se la targhetta è larga col palo nascosto
+ * dietro, la forma legge come una scheda gialla invece che come una palina.
  *
- * Il palo usa currentColor, così segue il tema chiaro/scuro come il testo
- * accanto; la targhetta e il pallino restano i colori dell'app, perché sono
- * identità e non decorazione.
+ * A 28 pixel resta una sola barra: due si impastano.
+ *
+ * Il palo usa currentColor e segue il tema come il testo accanto; il giallo
+ * della targhetta resta fisso, perché è identità e non decorazione.
  */
 export default function Marchio({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden className={className}>
-      {/* Palo e base. */}
+      {/* Palo e base, corti: accanto a un titolo in grassetto il disegno deve
+          pesare, e un palo lungo lascia solo spazio vuoto. */}
       <path
-        d="M16 13.5v14M11.5 27.5h9"
+        d="M23 5v22M19 27h8"
         stroke="currentColor"
-        strokeWidth="2.4"
+        strokeWidth="2.6"
         strokeLinecap="round"
-        opacity="0.55"
+        opacity="0.5"
       />
-      {/* La targhetta. */}
-      <rect x="2" y="3" width="28" height="11.5" rx="2.2" fill="#C4161C" />
-      {/* Una sola barra: a questa dimensione due diventano una macchia. */}
-      <rect x="5.5" y="7.4" width="15" height="2.6" rx="1.3" fill="#FFFFFF" />
-      {/* Il pallino del dato vivo. */}
-      <circle cx="25.4" cy="8.7" r="2.5" fill="#00875A" />
+      {/* La targhetta riempie il riquadro: a 12 unità su 32 era una macchiolina. */}
+      <rect x="4" y="3" width="19" height="21" rx="3" fill="#F5B916" />
+      {/* Due numeri di linea: a questa dimensione ci stanno, se sono grossi. */}
+      <rect x="7.5" y="7.5" width="12" height="3.6" rx="1.8" fill="#1B2027" />
+      <rect x="7.5" y="14" width="8.5" height="3.6" rx="1.8" fill="#1B2027" opacity="0.75" />
     </svg>
   );
 }

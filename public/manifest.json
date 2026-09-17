@@ -4,8 +4,8 @@
   "description": "Bus, tram e metro di Roma in tempo reale: linee, arrivi e mappa live.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFAFA",
-  "theme_color": "#8A1528",
+  "background_color": "#EDEFEE",
+  "theme_color": "#1B2027",
   "lang": "it",
   "icons": [
     {

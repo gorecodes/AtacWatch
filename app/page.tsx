@@ -15,7 +15,7 @@ export default function HomePage() {
           diventa decorazione: dice ciò che il marchio già mostra, e su uno
           schermo da 360 pixel rubava lo spazio che serve al tasto del tema. */}
       <header className="mb-4 flex items-center gap-2.5">
-        <Marchio className="h-7 w-7 shrink-0 text-neutral-900" />
+        <Marchio className="h-8 w-8 shrink-0 text-neutral-900" />
         <h1 className="name flex-1 text-[26px] font-bold leading-none tracking-tight text-neutral-900">
           Bus Roma
         </h1>
