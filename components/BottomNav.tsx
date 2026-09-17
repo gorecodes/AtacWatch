@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { StopGlyph, RouteGlyph, StarGlyph } from "./Glyphs";
+import { StopGlyph, RouteGlyph, StarGlyph, DelayGlyph } from "./Glyphs";
 
 /**
  * Navigazione in basso.
@@ -18,6 +18,7 @@ import { StopGlyph, RouteGlyph, StarGlyph } from "./Glyphs";
 const VOCI = [
   { href: "/", label: "Fermate", glifo: "stop" as const },
   { href: "/plan", label: "Percorsi", glifo: "route" as const },
+  { href: "/ritardi", label: "Ritardi", glifo: "delay" as const },
   { href: "/favorites", label: "Preferiti", glifo: "star" as const },
 ];
 
@@ -46,6 +47,7 @@ export default function BottomNav() {
               >
                 {v.glifo === "stop" && <StopGlyph className="h-6 w-6" />}
                 {v.glifo === "route" && <RouteGlyph className="h-6 w-6" />}
+                {v.glifo === "delay" && <DelayGlyph className="h-6 w-6" />}
                 {v.glifo === "star" && <StarGlyph filled={attiva} className="h-6 w-6" />}
                 <span className={`text-[11px] ${attiva ? "font-semibold" : ""}`}>{v.label}</span>
               </Link>

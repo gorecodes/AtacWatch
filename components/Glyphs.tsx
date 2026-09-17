@@ -134,6 +134,17 @@ export function MoonGlyph({ className = "" }: GlyphProps) {
   );
 }
 
+/** Ritardi: un orologio, con le lancette oltre l'orario. */
+export function DelayGlyph({ className = "" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
+      <circle cx="10" cy="10.6" r="7" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M10 6.8v4l2.6 1.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.4 2.6h5.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Un percorso: due capi e una linea spezzata che li unisce. */
 export function RouteGlyph({ className = "" }: GlyphProps) {
   return (
