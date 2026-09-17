@@ -18,18 +18,17 @@ export default function HomePage() {
       <SearchBar />
 
       {/* Il link ai percorsi non serve più: è una voce della navigazione in
-          basso, sempre a portata di pollice. Restano i due blocchi che contano,
-          e i preferiti vengono prima perché non chiedono il permesso di
-          posizione, quindi sono l'unica cosa utile al primo colpo. */}
+          basso, sempre a portata di pollice. I preferiti vengono prima perché
+          non chiedono il permesso di posizione, quindi sono l'unica cosa utile
+          al primo colpo.
+
+          Il banner del caffè sta QUI, tra i due blocchi, e non in fondo: la
+          lista degli arrivi vicini è lunga e in fondo non ci arriva nessuno.
+          È una decisione già presa, da non rimettere in discussione. */}
       <div className="mt-6 space-y-7">
         <FavoriteStops />
-        <NearbyArrivals />
-      </div>
-
-      {/* Il banner esce dal flusso del contenuto: in mezzo interrompeva la
-          lettura di ciò per cui si apre l'app. */}
-      <div className="mt-8">
         <SupportBanner />
+        <NearbyArrivals />
       </div>
     </div>
   );
