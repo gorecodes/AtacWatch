@@ -107,6 +107,20 @@ export function LiveDot({ className = "" }: GlyphProps) {
   );
 }
 
+export function BellGlyph({ filled, className = "" }: GlyphProps & { filled: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" fill={filled ? "currentColor" : "none"} aria-hidden className={className}>
+      <path
+        d="M10 2.5a5.5 5.5 0 0 0-5.5 5.5v3l-1.2 2h13.4l-1.2-2V8A5.5 5.5 0 0 0 10 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="M8.2 15.5a1.8 1.8 0 0 0 3.6 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** L'unico elemento animato dell'app: segnala che i dati si stanno aggiornando. */
 export function LiveBeacon({ className = "" }: GlyphProps) {
   return (

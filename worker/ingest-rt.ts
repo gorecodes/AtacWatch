@@ -7,6 +7,7 @@
  */
 import type postgres from "postgres";
 import GtfsRealtimeBindings from "gtfs-realtime-bindings";
+import { deliverPushNotifications } from "./push.js";
 
 // gtfs-realtime-bindings è CommonJS: importiamo come default e destructuriamo.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,10 +68,11 @@ export interface IngestStats {
   tripUpdates: number;
   alerts: number;
   delayGroups: number;
+  pushSent: number;
 }
 
 export async function ingestRt(sql: postgres.Sql): Promise<{ ok: true; stats: IngestStats } | { ok: false; error: string }> {
-  const stats: IngestStats = { vehicles: 0, tripUpdates: 0, alerts: 0, delayGroups: 0 };
+  const stats: IngestStats = { vehicles: 0, tripUpdates: 0, alerts: 0, delayGroups: 0, pushSent: 0 };
   const nowIso = new Date().toISOString();
 
   // Guard anti-sovrapposizione: se una run precedente è ancora in corso
@@ -171,6 +173,10 @@ export async function ingestRt(sql: postgres.Sql): Promise<{ ok: true; stats: In
     // Va DOPO lo swap: legge trip_updates appena aggiornata.
     const delayRows = await sql<{ n: number }[]>`SELECT record_delay_sample() AS n`;
     stats.delayGroups = delayRows[0]?.n ?? 0;
+
+    // Invia le push notification per i bus in arrivo (≤ 3 min dalla fermata).
+    // Va DOPO lo swap: usa trip_updates appena aggiornata.
+    stats.pushSent = await deliverPushNotifications(sql);
 
     // ---- Service Alerts: replace completo -------------------------------------
     const al = await fetchFeed(FEEDS.alerts);

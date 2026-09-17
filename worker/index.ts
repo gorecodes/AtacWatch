@@ -29,8 +29,8 @@ async function tick() {
   const result = await ingestRt(sql);
   const ms = Date.now() - t0;
   if (result.ok) {
-    const { vehicles, tripUpdates, alerts, delayGroups } = result.stats;
-    console.log(`[worker] ok (${ms}ms) — vehicles:${vehicles} tu:${tripUpdates} alerts:${alerts} delay:${delayGroups}`);
+    const { vehicles, tripUpdates, alerts, delayGroups, pushSent } = result.stats;
+    console.log(`[worker] ok (${ms}ms) — vehicles:${vehicles} tu:${tripUpdates} alerts:${alerts} delay:${delayGroups} push:${pushSent}`);
   } else {
     console.error(`[worker] errore (${ms}ms):`, result.error);
   }

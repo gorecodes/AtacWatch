@@ -11,13 +11,14 @@
     "worker:start": "tsx worker/index.ts"
   },
   "dependencies": {
+    "csv-parse": "^6.2.1",
+    "gtfs-realtime-bindings": "^2.0.0",
     "maplibre-gl": "^5.24.0",
     "next": "16.2.6",
+    "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "postgres": "^3.4.9",
-    "gtfs-realtime-bindings": "^2.0.0",
-    "csv-parse": "^6.2.1",
+    "web-push": "^3.6.7",
     "yauzl": "^3.3.1"
   },
   "devDependencies": {
@@ -25,6 +26,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "@types/yauzl": "^2.10.3",
     "dotenv": "^17.4.2",
     "eslint": "^9",
