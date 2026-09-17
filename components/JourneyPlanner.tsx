@@ -21,12 +21,16 @@ type Leg =
       arriveAt: string;
       minutes: number;
     };
-type Plan = {
+type Opzione = {
+  label: string;
   departAt: string;
   arriveAt: string;
   durationMin: number;
   walkMin: number;
   legs: Leg[];
+};
+type Plan = Opzione & {
+  alternatives: Opzione[];
   walkOption: { minutes: number; meters: number } | null;
 };
 
@@ -66,11 +70,14 @@ export default function JourneyPlanner() {
   const [state, setState] = useState<"idle" | "loading" | "empty" | "error">("idle");
   /** Vuoto = parto adesso. */
   const [quando, setQuando] = useState("");
+  /** 0 = il più rapido, poi le alternative nell'ordine restituito. */
+  const [scelta, setScelta] = useState(0);
 
   async function cerca() {
     if (!from || !to) return;
     setState("loading");
     setPlan(null);
+    setScelta(0);
     try {
       const res = await fetch(`/api/plan?${params(from, to, quando)}`, { cache: "no-store" });
       if (res.status === 404) {
@@ -152,19 +159,46 @@ export default function JourneyPlanner() {
         </p>
       )}
 
-      {plan && (
+      {plan && (() => {
+        const opzioni: Opzione[] = [plan, ...plan.alternatives];
+        const mostrata = opzioni[Math.min(scelta, opzioni.length - 1)];
+        return (
         <section className="mt-5">
+          {/* Con più opzioni non esiste una risposta sola giusta: chi ha
+              fretta e chi non vuole camminare vogliono itinerari diversi. */}
+          {opzioni.length > 1 && (
+            <div className="mb-3 flex gap-2">
+              {opzioni.map((o, i) => (
+                <button
+                  key={o.label}
+                  onClick={() => setScelta(i)}
+                  aria-pressed={i === scelta}
+                  className={`rounded px-2.5 py-1 text-[13px] ${
+                    i === scelta
+                      ? "bg-neutral-900 font-semibold text-white"
+                      : "border border-neutral-300 text-neutral-600"
+                  }`}
+                >
+                  {o.label}
+                  <span className={`ml-1.5 tabular-nums ${i === scelta ? "text-neutral-300" : "text-neutral-500"}`}>
+                    {o.durationMin}′
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-baseline justify-between border-b border-neutral-300 pb-2">
             <p className="text-[19px] font-bold tabular-nums text-neutral-900">
-              {ora(plan.departAt)} → {ora(plan.arriveAt)}
+              {ora(mostrata.departAt)} → {ora(mostrata.arriveAt)}
             </p>
             <p className="text-[13px] text-neutral-600">
-              {plan.durationMin} min · {plan.walkMin} a piedi
+              {mostrata.durationMin} min · {mostrata.walkMin} a piedi
             </p>
           </div>
 
           <ol className="divide-y divide-neutral-200">
-            {plan.legs.map((leg, i) => (
+            {mostrata.legs.map((leg, i) => (
               <li key={i} className="flex gap-3 py-3">
                 {leg.kind === "walk" ? (
                   <>
@@ -230,7 +264,7 @@ export default function JourneyPlanner() {
               Oppure <span className="font-semibold text-neutral-900">tutto a piedi</span> in{" "}
               {plan.walkOption.minutes} min ({(plan.walkOption.meters / 1000).toFixed(1)} km in linea
               d&apos;aria)
-              {plan.walkOption.minutes < plan.durationMin && ", che è più rapido"}.
+              {plan.walkOption.minutes < mostrata.durationMin && ", che è più rapido"}.
             </p>
           )}
 
@@ -239,7 +273,8 @@ export default function JourneyPlanner() {
             coincidenze. Le distanze a piedi sono in linea d&apos;aria.
           </p>
         </section>
-      )}
+        );
+      })()}
     </div>
   );
 }

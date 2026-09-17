@@ -6,6 +6,22 @@ import { findAccess, walkDistance } from "@/lib/plan/access";
 import { csaEarliestArrival, type Leg } from "@/lib/plan/csa";
 import { walkSeconds, MAX_WALK_ONLY_S, MAX_WALK_ALT_M } from "@/lib/plan/policy";
 
+/**
+ * Raggio stretto per l'alternativa "meno cammino": obbliga a salire vicino al
+ * punto di partenza invece di raggiungere a piedi una fermata più a monte.
+ *
+ * Nasce da una segnalazione. Da Via Apiro il router faceva camminare sei
+ * minuti fino a SALARIA/CASTEL GIUBILEO per prendere una 334 alle 10:07,
+ * mentre una 334 passa da RAPAGNANO/APIRO — sotto casa — alle 10:25. La prima
+ * arriva prima, ed è la risposta corretta all'earliest-arrival; la seconda fa
+ * camminare cinque minuti in meno. Non c'è una risposta sola giusta, quindi si
+ * mostrano entrambe.
+ */
+const ACCESS_TIGHT_M = 350;
+
+/** Differenza minima di cammino per cui vale la pena proporre l'alternativa. */
+const ALT_MIN_WALK_SAVED_S = 180;
+
 /** Data locale romana dell'istante indicato: decide quali servizi caricare. */
 function romeDate(epochMs: number): string {
   return new Intl.DateTimeFormat("sv-SE", {
@@ -86,6 +102,18 @@ export async function GET(req: Request) {
         ? csaEarliestArrival(cs, fp, access, egress, departEpoch)
         : null;
 
+    // Seconda passata a raggio stretto: costa 2 ms e dà l'alternativa che
+    // cammina meno. Almeno la fermata più vicina resta sempre disponibile,
+    // altrimenti in periferia il raggio stretto non ne conterrebbe nessuna.
+    const stretto = (l: typeof access) => {
+      const v = l.filter((x) => x.meters <= ACCESS_TIGHT_M);
+      return v.length > 0 ? v : l.slice(0, 1);
+    };
+    const resMinCammino =
+      res && access.length > 0 && egress.length > 0
+        ? csaEarliestArrival(cs, fp, stretto(access), stretto(egress), departEpoch)
+        : null;
+
     // Andare a piedi diventa la risposta principale solo se è breve, oppure se
     // non esiste alcun itinerario in mezzo pubblico. Quando il mezzo esiste ma
     // è più lento, resta lui la risposta e il cammino compare come
@@ -116,18 +144,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "nessun itinerario trovato", legs: [] }, { status: 404 });
     }
 
-    // Anagrafica solo per le fermate e le corse effettivamente nell'itinerario:
-    // sono una manciata, non vale caricare tutto il feed.
+    // Anagrafica solo per le fermate e le corse effettivamente negli
+    // itinerari: sono una manciata, non vale caricare tutto il feed.
     const stopIds = new Set<string>();
     const tripIds = new Set<string>();
-    for (const leg of res.legs) {
-      if (leg.kind === "ride") {
-        stopIds.add(cs.stopIds[leg.fromStop]);
-        stopIds.add(cs.stopIds[leg.toStop]);
-        tripIds.add(cs.tripSourceId[leg.tripIdx]);
-      } else {
-        if (leg.fromStop !== null) stopIds.add(cs.stopIds[leg.fromStop]);
-        if (leg.toStop !== null) stopIds.add(cs.stopIds[leg.toStop]);
+    for (const r of [res, resMinCammino]) {
+      if (!r) continue;
+      for (const leg of r.legs) {
+        if (leg.kind === "ride") {
+          stopIds.add(cs.stopIds[leg.fromStop]);
+          stopIds.add(cs.stopIds[leg.toStop]);
+          tripIds.add(cs.tripSourceId[leg.tripIdx]);
+        } else {
+          if (leg.fromStop !== null) stopIds.add(cs.stopIds[leg.fromStop]);
+          if (leg.toStop !== null) stopIds.add(cs.stopIds[leg.toStop]);
+        }
       }
     }
 
@@ -154,42 +185,81 @@ export async function GET(req: Request) {
       return { stopId: id, name: s?.name ?? id, code: s?.code ?? null };
     };
 
-    let walkS = 0;
-    const legs = res.legs.map((leg: Leg) => {
-      if (leg.kind === "walk") {
-        walkS += leg.seconds;
+    const rendi = (r: NonNullable<typeof res>, label: string) => {
+      // Tratti a piedi consecutivi uniti: camminare fino a una fermata per poi
+      // ripartire a piedi non significa niente per chi legge, ed è quello che
+      // succede quando l'ultimo trasferimento porta su una fermata da cui poi
+      // si esce a piedi verso la destinazione.
+      const unite: Leg[] = [];
+      for (const leg of r.legs) {
+        const prec = unite[unite.length - 1];
+        if (leg.kind === "walk" && prec && prec.kind === "walk") {
+          unite[unite.length - 1] = {
+            kind: "walk",
+            fromStop: prec.fromStop,
+            toStop: leg.toStop,
+            seconds: prec.seconds + leg.seconds,
+            departAt: prec.departAt,
+            arriveAt: leg.arriveAt,
+          };
+        } else {
+          unite.push(leg);
+        }
+      }
+
+      let walkS = 0;
+      const legs = unite.map((leg: Leg) => {
+        if (leg.kind === "walk") {
+          walkS += leg.seconds;
+          return {
+            kind: "walk" as const,
+            from: leg.fromStop === null ? null : fermata(leg.fromStop),
+            to: leg.toStop === null ? null : fermata(leg.toStop),
+            minutes: Math.max(1, Math.round(leg.seconds / 60)),
+            departAt: iso(leg.departAt),
+            arriveAt: iso(leg.arriveAt),
+          };
+        }
+        const tripId = cs.tripSourceId[leg.tripIdx];
+        const t = tripById.get(tripId);
         return {
-          kind: "walk" as const,
-          from: leg.fromStop === null ? null : fermata(leg.fromStop),
-          to: leg.toStop === null ? null : fermata(leg.toStop),
-          minutes: Math.max(1, Math.round(leg.seconds / 60)),
+          kind: "ride" as const,
+          tripId,
+          shortName: t?.short_name ?? "?",
+          color: t?.color ?? null,
+          textColor: t?.text_color ?? null,
+          headsign: t?.headsign ?? null,
+          from: fermata(leg.fromStop),
+          to: fermata(leg.toStop),
           departAt: iso(leg.departAt),
           arriveAt: iso(leg.arriveAt),
+          minutes: Math.max(1, Math.round((leg.arriveAt - leg.departAt) / 60)),
         };
-      }
-      const tripId = cs.tripSourceId[leg.tripIdx];
-      const t = tripById.get(tripId);
+      });
+
       return {
-        kind: "ride" as const,
-        tripId,
-        shortName: t?.short_name ?? "?",
-        color: t?.color ?? null,
-        textColor: t?.text_color ?? null,
-        headsign: t?.headsign ?? null,
-        from: fermata(leg.fromStop),
-        to: fermata(leg.toStop),
-        departAt: iso(leg.departAt),
-        arriveAt: iso(leg.arriveAt),
-        minutes: Math.max(1, Math.round((leg.arriveAt - leg.departAt) / 60)),
+        label,
+        departAt: iso(r.departAt),
+        arriveAt: iso(r.arriveAt),
+        durationMin: Math.round((r.arriveAt - (departEpoch - cs.baseEpoch)) / 60),
+        walkMin: Math.round(walkS / 60),
+        walkSeconds: walkS,
+        legs,
       };
-    });
+    };
+
+    const principale = rendi(res, "Più rapido");
+
+    // L'alternativa si propone solo se fa camminare sensibilmente meno: se
+    // coincide o guadagna pochi secondi, sono due voci che dicono la stessa
+    // cosa e confondono invece di aiutare.
+    const alt = resMinCammino ? rendi(resMinCammino, "Meno cammino") : null;
+    const alternatives =
+      alt && principale.walkSeconds - alt.walkSeconds >= ALT_MIN_WALK_SAVED_S ? [alt] : [];
 
     return NextResponse.json({
-      departAt: iso(res.departAt),
-      arriveAt: iso(res.arriveAt),
-      durationMin: Math.round((res.arriveAt - (departEpoch - cs.baseEpoch)) / 60),
-      walkMin: Math.round(walkS / 60),
-      legs,
+      ...principale,
+      alternatives,
       // Presente solo se camminare è un'alternativa sensata da confrontare.
       walkOption: camminabile ? { minutes: camminata.minutes, meters: direttoM } : null,
     });
