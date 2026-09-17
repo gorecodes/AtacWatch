@@ -54,13 +54,27 @@ function queryPagina(from: Endpoint, to: Endpoint, quando: string): string {
   return p.toString();
 }
 
+/**
+ * Numero da un parametro, o null.
+ *
+ * Il controllo sul valore grezzo è indispensabile: `Number(null)` vale ZERO e
+ * `Number.isFinite(0)` è vero, quindi convertendo direttamente un parametro
+ * assente si otteneva la coordinata 0,0. Apparivano due capi chiamati
+ * "Posizione scelta" su una pagina appena aperta.
+ */
+function numeroParam(v: string | null): number | null {
+  if (v === null || v.trim() === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function capoDaParams(sp: ReadonlyURLSearchParams, lato: "from" | "to"): Endpoint | null {
   const etichetta = sp.get(`${lato}Label`) ?? "";
   const stopId = sp.get(`${lato}StopId`);
   if (stopId) return { kind: "stop", stopId, name: etichetta || stopId };
-  const lat = Number(sp.get(`${lato}Lat`));
-  const lon = Number(sp.get(`${lato}Lon`));
-  if (Number.isFinite(lat) && Number.isFinite(lon)) {
+  const lat = numeroParam(sp.get(`${lato}Lat`));
+  const lon = numeroParam(sp.get(`${lato}Lon`));
+  if (lat !== null && lon !== null) {
     return { kind: "place", lat, lon, name: etichetta || "Posizione scelta" };
   }
   return null;
