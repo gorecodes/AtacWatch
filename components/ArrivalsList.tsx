@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import type { Arrival } from "@/lib/gtfs";
-import { delayLabel } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import { useFavorites } from "@/lib/favorites";
 import RouteBadge from "./RouteBadge";
@@ -119,7 +118,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
             : a.direction_id != null
               ? `/line/${encodeURIComponent(a.route_id)}?dir=${a.direction_id}`
               : `/line/${encodeURIComponent(a.route_id)}`;
-          const delay = a.is_realtime ? delayLabel(a.delay) : null;
           return (
             <li key={`${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`} className="flex items-center">
               <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
@@ -128,10 +126,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                 <span className="name min-w-0 flex-1 truncate text-[15px] leading-snug text-neutral-900">
                   {a.headsign ?? "Destinazione non indicata"}
                 </span>
-
-                {delay && (
-                  <span className="shrink-0 text-[12px] tabular-nums text-brand-500">{delay}</span>
-                )}
 
                 <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
               </Link>
