@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { NearbyArrival } from "@/lib/gtfs";
-import { delayLabel } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
@@ -22,6 +21,9 @@ type SortKey = "distance" | "time";
 
 const REFRESH_MS = 30_000;
 const COORDS_KEY = "nearbyArrivals_coords";
+// In centro entro 700 metri passano decine di corse: mostrarle tutte rende la
+// home infinita e niente di quello che sta sotto viene mai raggiunto.
+const VISIBLE_MAX = 8;
 
 function saveCoords(c: Coords) {
   try { sessionStorage.setItem(COORDS_KEY, JSON.stringify(c)); } catch {}
@@ -41,6 +43,7 @@ function sorted(arrivals: NearbyArrival[], by: SortKey): NearbyArrival[] {
 export default function NearbyArrivals() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [sortBy, setSortBy] = useState<SortKey>("distance");
+  const [expanded, setExpanded] = useState(false);
   const now = useNow(15000);
 
   function locate(background = false) {
@@ -200,38 +203,47 @@ export default function NearbyArrivals() {
         </p>
       )}
 
-      {state.kind === "ok" && state.arrivals.length > 0 && (
-        <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
-          {sorted(state.arrivals, sortBy).map((a, i) => {
-            const delay = a.is_realtime ? delayLabel(a.delay) : null;
-            return (
-              <li key={`${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`}>
-                <Link
-                  href={`/stop/${encodeURIComponent(a.stop_id)}`}
-                  className="flex items-center gap-3 py-2.5 active:bg-neutral-200/40"
-                >
-                  <RouteBadge shortName={a.short_name} color={a.color} textColor={a.text_color} />
+      {state.kind === "ok" && state.arrivals.length > 0 && (() => {
+        const all = sorted(state.arrivals, sortBy);
+        const shown = expanded ? all : all.slice(0, VISIBLE_MAX);
+        const hidden = all.length - shown.length;
+        return (
+          <>
+            <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
+              {shown.map((a, i) => (
+                <li key={`${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`}>
+                  <Link
+                    href={`/stop/${encodeURIComponent(a.stop_id)}`}
+                    className="flex items-center gap-3 py-2.5 active:bg-neutral-200/40"
+                  >
+                    <RouteBadge shortName={a.short_name} color={a.color} textColor={a.text_color} />
 
-                  <span className="min-w-0 flex-1">
-                    <span className="name block truncate text-[15px] font-medium leading-snug text-neutral-900">
-                      {a.headsign ?? "Destinazione non indicata"}
+                    <span className="min-w-0 flex-1">
+                      <span className="name block truncate text-[15px] font-medium leading-snug text-neutral-900">
+                        {a.headsign ?? "Destinazione non indicata"}
+                      </span>
+                      <span className="name block truncate text-[13px] leading-snug text-neutral-500">
+                        {a.stop_name}, {a.distance_m} m
+                      </span>
                     </span>
-                    <span className="name block truncate text-[13px] leading-snug text-neutral-500">
-                      {a.stop_name}, {a.distance_m} m
-                    </span>
-                  </span>
 
-                  {delay && (
-                    <span className="shrink-0 text-[12px] tabular-nums text-brand-500">{delay}</span>
-                  )}
+                    <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
 
-                  <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+            {hidden > 0 && (
+              <button
+                onClick={() => setExpanded(true)}
+                className="w-full py-2.5 text-[13px] font-medium text-neutral-600 active:text-neutral-900"
+              >
+                Mostra altre {hidden} corse
+              </button>
+            )}
+          </>
+        );
+      })()}
     </section>
   );
 }

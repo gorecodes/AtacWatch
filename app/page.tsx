@@ -21,8 +21,8 @@ export default function HomePage() {
           sono l'unica cosa che può essere utile al primo colpo. */}
       <div className="mt-6 space-y-7">
         <FavoriteStops />
-        <NearbyArrivals />
         <SupportBanner />
+        <NearbyArrivals />
       </div>
     </div>
   );
