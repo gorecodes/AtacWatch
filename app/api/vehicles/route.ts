@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSql } from "@/lib/db";
 
 // Mezzi nel riquadro visibile della mappa. bbox = minLon,minLat,maxLon,maxLat
 export async function GET(req: Request) {
@@ -16,16 +16,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "bbox troppo grande o non valido" }, { status: 400 });
   }
 
-  const { data, error } = await getSupabase().rpc("vehicles_in_bbox", {
-    min_lon: minLon, min_lat: minLat, max_lon: maxLon, max_lat: maxLat,
-  });
-  if (error) {
-    console.error("[vehicles]", error);
+  try {
+    const sql = getSql();
+    const rows = await sql`SELECT * FROM vehicles_in_bbox(${minLon}, ${minLat}, ${maxLon}, ${maxLat})`;
+    return NextResponse.json(
+      { vehicles: rows },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (e) {
+    console.error("[vehicles]", e);
     return NextResponse.json({ error: "errore interno" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { vehicles: data ?? [] },
-    { headers: { "Cache-Control": "no-store" } },
-  );
 }

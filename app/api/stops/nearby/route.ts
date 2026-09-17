@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSql } from "@/lib/db";
 
 // Fermate vicine a una coordinata
 export async function GET(req: Request) {
@@ -13,16 +13,15 @@ export async function GET(req: Request) {
   // Clamp del raggio: evita scan PostGIS arbitrariamente costosi (DoS).
   const radius = Math.min(Math.max(Number.isFinite(radiusRaw) ? radiusRaw : 600, 100), 2000);
 
-  const { data, error } = await getSupabase().rpc("stops_nearby", {
-    p_lat: lat, p_lon: lon, p_radius_m: radius,
-  });
-  if (error) {
-    console.error("[stops/nearby]", error);
+  try {
+    const sql = getSql();
+    const rows = await sql`SELECT * FROM stops_nearby(${lat}, ${lon}, ${radius})`;
+    return NextResponse.json(
+      { stops: rows },
+      { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } },
+    );
+  } catch (e) {
+    console.error("[stops/nearby]", e);
     return NextResponse.json({ error: "errore interno" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { stops: data ?? [] },
-    { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } },
-  );
 }

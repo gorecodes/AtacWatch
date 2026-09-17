@@ -1,23 +1,23 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSql } from "@/lib/db";
 
 // Arrivi alla fermata (realtime + orario programmato) + anagrafica fermata
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = getSupabase();
 
-  const [stop, arrivals] = await Promise.all([
-    supabase.from("stops").select("stop_id, name, code").eq("stop_id", id).maybeSingle(),
-    supabase.rpc("stop_arrivals", { p_stop_id: id }),
-  ]);
+  try {
+    const sql = getSql();
+    const [stopRows, arrivals] = await Promise.all([
+      sql`SELECT stop_id, name, code FROM stops WHERE stop_id = ${id} LIMIT 1`,
+      sql`SELECT * FROM stop_arrivals(${id})`,
+    ]);
 
-  if (arrivals.error) {
-    console.error("[stops/:id/arrivals]", arrivals.error);
+    return NextResponse.json(
+      { stop: stopRows[0] ?? null, arrivals },
+      { headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30" } },
+    );
+  } catch (e) {
+    console.error("[stops/:id/arrivals]", e);
     return NextResponse.json({ error: "errore interno" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { stop: stop.data, arrivals: arrivals.data ?? [] },
-    { headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30" } },
-  );
 }
