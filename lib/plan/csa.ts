@@ -97,6 +97,12 @@ export function csaEarliestArrival(
   access: Access[],
   egress: Access[],
   departEpoch: number,
+  /**
+   * Tetto al numero di corse. Eseguendo la scansione con tetti crescenti si
+   * ottiene, per ogni numero di cambi, il miglior arrivo possibile: insieme
+   * formano il fronte delle opzioni non dominate da mostrare a chi sceglie.
+   */
+  maxRides: number = MAX_LEGS,
 ): CsaResult | null {
   const numStops = cs.stopIds.length;
   const t0 = departEpoch - cs.baseEpoch;
@@ -153,8 +159,8 @@ export function csaEarliestArrival(
 
     const trip = cs.tripIdx[i];
     const ds = cs.depStop[i];
-    const salibile = earliest[ds] + MIN_TRANSFER_S <= dep;
     const candRides = rides[ds] + 1;
+    const salibile = candRides <= maxRides && earliest[ds] + MIN_TRANSFER_S <= dep;
     const candWalk = walkAcc[ds];
 
     if (tripBoarded[trip] === 0) {

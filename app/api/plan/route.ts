@@ -19,9 +19,6 @@ import { walkSeconds, MAX_WALK_ONLY_S, MAX_WALK_ALT_M } from "@/lib/plan/policy"
  */
 const ACCESS_TIGHT_M = 350;
 
-/** Differenza minima di cammino per cui vale la pena proporre l'alternativa. */
-const ALT_MIN_WALK_SAVED_S = 180;
-
 /** Data locale romana dell'istante indicato: decide quali servizi caricare. */
 function romeDate(epochMs: number): string {
   return new Intl.DateTimeFormat("sv-SE", {
@@ -97,22 +94,33 @@ export async function GET(req: Request) {
     const soloPiediS = walkSeconds(direttoM);
     const camminabile = direttoM <= MAX_WALK_ALT_M;
 
-    const res =
-      access.length > 0 && egress.length > 0
-        ? csaEarliestArrival(cs, fp, access, egress, departEpoch)
-        : null;
-
-    // Seconda passata a raggio stretto: costa 2 ms e dà l'alternativa che
-    // cammina meno. Almeno la fermata più vicina resta sempre disponibile,
-    // altrimenti in periferia il raggio stretto non ne conterrebbe nessuna.
+    // Raggio stretto: obbliga a salire vicino al punto di partenza invece di
+    // raggiungere a piedi una fermata più a monte. Almeno la fermata più
+    // vicina resta sempre disponibile, altrimenti in periferia il raggio
+    // stretto non ne conterrebbe nessuna.
     const stretto = (l: typeof access) => {
       const v = l.filter((x) => x.meters <= ACCESS_TIGHT_M);
       return v.length > 0 ? v : l.slice(0, 1);
     };
-    const resMinCammino =
-      res && access.length > 0 && egress.length > 0
-        ? csaEarliestArrival(cs, fp, stretto(access), stretto(egress), departEpoch)
-        : null;
+
+    // Il fronte delle opzioni: una scansione per ogni tetto di cambi, più le
+    // varianti a raggio stretto. Non esiste un itinerario "giusto" — chi ha
+    // fretta, chi non vuole cambiare e chi non vuole camminare ne vogliono
+    // tre diversi — quindi si generano e si mostrano tutti, come fa Google
+    // Maps. Ogni scansione costa un paio di millisecondi.
+    const risultati =
+      access.length > 0 && egress.length > 0
+        ? [
+            ...[1, 2, 3, 4].map((cap) =>
+              csaEarliestArrival(cs, fp, access, egress, departEpoch, cap),
+            ),
+            ...[1, 2, 3].map((cap) =>
+              csaEarliestArrival(cs, fp, stretto(access), stretto(egress), departEpoch, cap),
+            ),
+          ].filter((r): r is NonNullable<typeof r> => r !== null)
+        : [];
+
+    const res = risultati[0] ?? null;
 
     // Andare a piedi diventa la risposta principale solo se è breve, oppure se
     // non esiste alcun itinerario in mezzo pubblico. Quando il mezzo esiste ma
@@ -131,25 +139,31 @@ export async function GET(req: Request) {
 
     if (piediComePrincipale) {
       return NextResponse.json({
-        departAt: new Date(departEpoch * 1000).toISOString(),
-        arriveAt: new Date((departEpoch + soloPiediS) * 1000).toISOString(),
-        durationMin: camminata.minutes,
-        walkMin: camminata.minutes,
-        legs: [camminata],
+        options: [
+          {
+            departAt: new Date(departEpoch * 1000).toISOString(),
+            arriveAt: new Date((departEpoch + soloPiediS) * 1000).toISOString(),
+            durationMin: camminata.minutes,
+            walkMin: camminata.minutes,
+            walkSeconds: soloPiediS,
+            rides: 0,
+            lines: [],
+            legs: [camminata],
+          },
+        ],
         walkOption: null,
       });
     }
 
     if (!res) {
-      return NextResponse.json({ error: "nessun itinerario trovato", legs: [] }, { status: 404 });
+      return NextResponse.json({ error: "nessun itinerario trovato", options: [] }, { status: 404 });
     }
 
     // Anagrafica solo per le fermate e le corse effettivamente negli
     // itinerari: sono una manciata, non vale caricare tutto il feed.
     const stopIds = new Set<string>();
     const tripIds = new Set<string>();
-    for (const r of [res, resMinCammino]) {
-      if (!r) continue;
+    for (const r of risultati) {
       for (const leg of r.legs) {
         if (leg.kind === "ride") {
           stopIds.add(cs.stopIds[leg.fromStop]);
@@ -185,7 +199,7 @@ export async function GET(req: Request) {
       return { stopId: id, name: s?.name ?? id, code: s?.code ?? null };
     };
 
-    const rendi = (r: NonNullable<typeof res>, label: string) => {
+    const rendi = (r: NonNullable<typeof res>) => {
       // Tratti a piedi consecutivi uniti: camminare fino a una fermata per poi
       // ripartire a piedi non significa niente per chi legge, ed è quello che
       // succede quando l'ultimo trasferimento porta su una fermata da cui poi
@@ -237,29 +251,69 @@ export async function GET(req: Request) {
         };
       });
 
+      const corse = legs.filter((l) => l.kind === "ride");
       return {
-        label,
         departAt: iso(r.departAt),
         arriveAt: iso(r.arriveAt),
         durationMin: Math.round((r.arriveAt - (departEpoch - cs.baseEpoch)) / 60),
         walkMin: Math.round(walkS / 60),
         walkSeconds: walkS,
+        rides: corse.length,
+        /** Le linee in ordine: serve a riconoscere l'itinerario a colpo d'occhio. */
+        lines: corse.map((l) => (l.kind === "ride" ? l.shortName : "")),
         legs,
+        // Firma per riconoscere due scansioni che hanno prodotto lo stesso
+        // itinerario: tetti di cambi diversi arrivano spesso alla stessa
+        // risposta.
+        firma: corse
+          .map((l) => (l.kind === "ride" ? `${l.shortName}@${l.from.stopId}>${l.to.stopId}@${l.departAt}` : ""))
+          .join("|"),
       };
     };
 
-    const principale = rendi(res, "Più rapido");
+    const rese = risultati.map(rendi);
 
-    // L'alternativa si propone solo se fa camminare sensibilmente meno: se
-    // coincide o guadagna pochi secondi, sono due voci che dicono la stessa
-    // cosa e confondono invece di aiutare.
-    const alt = resMinCammino ? rendi(resMinCammino, "Meno cammino") : null;
-    const alternatives =
-      alt && principale.walkSeconds - alt.walkSeconds >= ALT_MIN_WALK_SAVED_S ? [alt] : [];
+    // Si scartano i doppioni e le opzioni dominate: un itinerario che arriva
+    // più tardi, con più cambi E più cammino di un altro non è una scelta, è
+    // rumore. Restano solo quelle in cui si rinuncia a qualcosa per guadagnare
+    // altro, che è ciò su cui vale la pena decidere.
+    const viste = new Set<string>();
+    const uniche = rese.filter((o) => {
+      if (viste.has(o.firma)) return false;
+      viste.add(o.firma);
+      return true;
+    });
+    // Un'opzione che dura il doppio della migliore non è una scelta, è una
+    // trappola: con i tetti di cambi bassi la scansione trova itinerari
+    // formalmente non dominati — meno cambi, meno cammino — che però aspettano
+    // la corsa utile del giorno dopo. Misurato: da Via Apiro compariva una C5
+    // da 1454 minuti.
+    const piuRapida = Math.min(...uniche.map((o) => o.durationMin));
+    const sensate = uniche.filter((o) => o.durationMin <= piuRapida * 2 + 15);
+
+    const options = sensate
+      .filter(
+        (o) =>
+          !sensate.some(
+            (a) =>
+              a !== o &&
+              a.arriveAt <= o.arriveAt &&
+              a.rides <= o.rides &&
+              a.walkSeconds <= o.walkSeconds &&
+              (a.arriveAt < o.arriveAt || a.rides < o.rides || a.walkSeconds < o.walkSeconds),
+          ),
+      )
+      .sort((a, b) => a.arriveAt.localeCompare(b.arriveAt) || a.rides - b.rides)
+      .slice(0, 5)
+      // La firma serviva solo a deduplicare, non a chi legge.
+      .map(({ firma, ...resto }) => resto);
+
+    if (options.length === 0) {
+      return NextResponse.json({ error: "nessun itinerario trovato", options: [] }, { status: 404 });
+    }
 
     return NextResponse.json({
-      ...principale,
-      alternatives,
+      options,
       // Presente solo se camminare è un'alternativa sensata da confrontare.
       walkOption: camminabile ? { minutes: camminata.minutes, meters: direttoM } : null,
     });

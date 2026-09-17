@@ -22,15 +22,16 @@ type Leg =
       minutes: number;
     };
 type Opzione = {
-  label: string;
   departAt: string;
   arriveAt: string;
   durationMin: number;
   walkMin: number;
+  rides: number;
+  lines: string[];
   legs: Leg[];
 };
-type Plan = Opzione & {
-  alternatives: Opzione[];
+type Plan = {
+  options: Opzione[];
   walkOption: { minutes: number; meters: number } | null;
 };
 
@@ -159,33 +160,45 @@ export default function JourneyPlanner() {
         </p>
       )}
 
-      {plan && (() => {
-        const opzioni: Opzione[] = [plan, ...plan.alternatives];
-        const mostrata = opzioni[Math.min(scelta, opzioni.length - 1)];
+      {plan && plan.options.length > 0 && (() => {
+        const mostrata = plan.options[Math.min(scelta, plan.options.length - 1)];
         return (
         <section className="mt-5">
-          {/* Con più opzioni non esiste una risposta sola giusta: chi ha
-              fretta e chi non vuole camminare vogliono itinerari diversi. */}
-          {opzioni.length > 1 && (
-            <div className="mb-3 flex gap-2">
-              {opzioni.map((o, i) => (
-                <button
-                  key={o.label}
-                  onClick={() => setScelta(i)}
-                  aria-pressed={i === scelta}
-                  className={`rounded px-2.5 py-1 text-[13px] ${
-                    i === scelta
-                      ? "bg-neutral-900 font-semibold text-white"
-                      : "border border-neutral-300 text-neutral-600"
-                  }`}
-                >
-                  {o.label}
-                  <span className={`ml-1.5 tabular-nums ${i === scelta ? "text-neutral-300" : "text-neutral-500"}`}>
-                    {o.durationMin}′
-                  </span>
-                </button>
+          {/* Le opzioni si mostrano tutte con i loro numeri, e sceglie chi
+              legge: non esiste un itinerario giusto in assoluto, perché chi ha
+              fretta, chi non vuole cambiare e chi non vuole camminare ne
+              vogliono tre diversi. */}
+          {plan.options.length > 1 && (
+            <ul className="mb-4 divide-y divide-neutral-200 border-y border-neutral-300">
+              {plan.options.map((o, i) => (
+                <li key={i}>
+                  <button
+                    onClick={() => setScelta(i)}
+                    aria-pressed={i === scelta}
+                    className={`flex w-full items-center gap-3 py-2.5 text-left ${
+                      i === scelta ? "" : "active:bg-neutral-200/40"
+                    }`}
+                  >
+                    <span className={`w-1 self-stretch rounded-full ${i === scelta ? "bg-neutral-900" : "bg-transparent"}`} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px] tabular-nums text-neutral-900">
+                        <span className={i === scelta ? "font-bold" : "font-medium"}>
+                          {o.durationMin} min
+                        </span>
+                        <span className="text-neutral-500">
+                          {" "}· {ora(o.departAt)}–{ora(o.arriveAt)}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[13px] text-neutral-600">
+                        {o.lines.length > 0 ? o.lines.join(" › ") : "tutto a piedi"}
+                        {o.rides > 1 && ` · ${o.rides - 1} camb${o.rides === 2 ? "io" : "i"}`}
+                        {o.walkMin > 0 && ` · ${o.walkMin} min a piedi`}
+                      </span>
+                    </span>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
 
           <div className="flex items-baseline justify-between border-b border-neutral-300 pb-2">
