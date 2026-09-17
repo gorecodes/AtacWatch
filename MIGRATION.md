@@ -29,15 +29,15 @@ Il progetto AtacWatch nasce su Vercel (frontend + API) + Supabase (PostgreSQL ho
 
 ## Fase 2 — Staccare supabase-js
 
-- [ ] Riscrivere `lib/supabase.ts` → `lib/db.ts` con wrapper `postgres.js`
-- [ ] Aggiornare le 10 route in `app/api/` da `.rpc()`/`.from()` a query SQL dirette
-- [ ] Rimuovere `@supabase/ssr` e `@supabase/supabase-js` da `package.json`
-- [ ] Rimuovere variabili `NEXT_PUBLIC_SUPABASE_*` e `SUPABASE_SERVICE_ROLE_KEY`; resta solo `DATABASE_URL`
+- [x] Riscrivere `lib/supabase.ts` → `lib/db.ts` con wrapper `postgres.js`
+- [x] Aggiornare le 11 route in `app/api/` da `.rpc()`/`.from()` a query SQL dirette
+- [x] Rimuovere `@supabase/ssr` e `@supabase/supabase-js` da `package.json`
+- [x] Rimuovere variabili `NEXT_PUBLIC_SUPABASE_*` e `SUPABASE_SERVICE_ROLE_KEY`; resta solo `DATABASE_URL`
 
 ## Fase 3 — Worker realtime (Deno → Node)
 
-- [ ] Portare `supabase/functions/ingest-rt/index.ts` → `worker/ingest-rt.ts` (Node)
-- [ ] Entry point `worker/index.ts` con `setInterval(60_000)` + graceful shutdown
+- [x] Portare `supabase/functions/ingest-rt/index.ts` → `worker/ingest-rt.ts` (Node)
+- [x] Entry point `worker/index.ts` con `setInterval(60_000)` + graceful shutdown
 - [ ] Testare il ciclo RT localmente con `docker compose up`
 
 ## Fase 4 — Ingest statico
