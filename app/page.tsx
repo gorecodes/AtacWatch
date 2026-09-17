@@ -1,5 +1,6 @@
 import SearchBar from "@/components/SearchBar";
 import Benvenuto from "@/components/Benvenuto";
+import Marchio from "@/components/Marchio";
 import ThemeToggle from "@/components/ThemeToggle";
 import NearbyArrivals from "@/components/NearbyArrivals";
 import FavoriteStops from "@/components/FavoriteStops";
@@ -10,14 +11,15 @@ export default function HomePage() {
     <div className="mx-auto max-w-lg px-4 pt-5">
       {/* Intestazione su una riga sola: prima i crediti e il sottotitolo si
           mangiavano 130px dei 900 di viewport, sopra la piega. */}
-      <header className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="name text-[26px] font-bold leading-none tracking-tight text-neutral-900">
+      {/* Col marchio accanto al titolo, il sottotitolo "Roma in tempo reale"
+          diventa decorazione: dice ciò che il marchio già mostra, e su uno
+          schermo da 360 pixel rubava lo spazio che serve al tasto del tema. */}
+      <header className="mb-4 flex items-center gap-2.5">
+        <Marchio className="h-7 w-7 shrink-0 text-neutral-900" />
+        <h1 className="name flex-1 text-[26px] font-bold leading-none tracking-tight text-neutral-900">
           Bus Roma
         </h1>
-        <div className="flex shrink-0 items-center gap-1">
-          <p className="text-[13px] text-neutral-500">Roma in tempo reale</p>
-          <ThemeToggle />
-        </div>
+        <ThemeToggle />
       </header>
 
       <Benvenuto />
