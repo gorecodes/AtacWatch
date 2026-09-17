@@ -40,11 +40,20 @@ function tsToIso(sec: number | null): string | null {
   return sec ? new Date(sec * 1000).toISOString() : null;
 }
 
-async function fetchFeed(url: string) {
+async function fetchFeed(url: string, attempt = 0): Promise<ReturnType<typeof transit_realtime.FeedMessage.decode>> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status} su ${url}`);
   const buf = new Uint8Array(await res.arrayBuffer());
-  return transit_realtime.FeedMessage.decode(buf);
+  try {
+    return transit_realtime.FeedMessage.decode(buf);
+  } catch (err) {
+    if (attempt < 2) {
+      // Feed troncato (risposta parziale dal server ATAC): riprova dopo 2s
+      await new Promise(r => setTimeout(r, 2000));
+      return fetchFeed(url, attempt + 1);
+    }
+    throw err;
+  }
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
