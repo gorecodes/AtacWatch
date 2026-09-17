@@ -10,7 +10,9 @@
  *     npx tsx scripts/plan-check.ts
  */
 import postgres from "postgres";
-import { loadConnections } from "../lib/plan/connections";
+import { loadConnections, type ConnectionSet } from "../lib/plan/connections";
+import { loadFootpaths } from "../lib/plan/footpaths";
+import { csaEarliestArrival } from "../lib/plan/csa";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -114,7 +116,94 @@ async function main() {
     console.log(`  timetable: seq ${r.stop_sequence} ${r.stop_id} ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
   }
 
+  // ── Itinerari su percorsi controllabili a mano ──
+  const fp = await loadFootpaths(sql, cs, oggi);
+  console.log(`\n── Trasferimenti a piedi (≤500m) ──`);
+  console.log(`  archi: ${fp.n.toLocaleString("it-IT")}`);
+
+  // Mezzanotte di baseEpoch è il giorno PRIMA di oggi, quindi +86400 per oggi.
+  const oggiAlle = (ora: number) => cs.baseEpoch + 86400 + ora * 3600;
+
+  await provaViaggio(cs, fp, "73992", "70078", oggiAlle(10), "diretto sulla 64");
+  await provaViaggio(cs, fp, "73992", "72983", oggiAlle(10), "corsa + trasferimento a piedi");
+  // 24.5 = domani alle 00:30, l'ora in cui servono le corse con departure_s > 86400
+  await provaViaggio(cs, fp, "73992", "70078", oggiAlle(24.5), "notturno oltre mezzanotte");
+
   await sql.end();
+}
+
+async function provaViaggio(
+  cs: ConnectionSet,
+  fp: Awaited<ReturnType<typeof loadFootpaths>>,
+  fromId: string,
+  toId: string,
+  partenza: number,
+  etichetta: string,
+) {
+  const from = cs.stopIndex.get(fromId);
+  const to = cs.stopIndex.get(toId);
+  console.log(`\n── ${etichetta} ──`);
+  if (from === undefined || to === undefined) {
+    console.log(`  fermata senza servizio nei giorni caricati`);
+    return;
+  }
+
+  const nomi = await sql<{ stop_id: string; name: string }[]>`
+    SELECT stop_id, name FROM stops WHERE stop_id IN (${fromId}, ${toId})
+  `;
+  const nome = (id: string) => nomi.find((n) => n.stop_id === id)?.name ?? id;
+  console.log(`  da ${nome(fromId)} a ${nome(toId)}`);
+  console.log(`  partenza richiesta: ${hhmm(partenza - cs.baseEpoch, cs.baseEpoch)}`);
+
+  const t0 = Date.now();
+  const res = csaEarliestArrival(cs, fp, [{ stop: from, seconds: 0 }], [{ stop: to, seconds: 0 }], partenza);
+  const ms = Date.now() - t0;
+
+  if (!res) {
+    console.log(`  NESSUN ITINERARIO (${ms} ms)`);
+    return;
+  }
+
+  console.log(`  arrivo: ${hhmm(res.arriveAt, cs.baseEpoch)}  ·  durata ${Math.round((res.arriveAt - (partenza - cs.baseEpoch)) / 60)} min  ·  ${ms} ms, ${res.scanned.toLocaleString("it-IT")} connessioni esaminate`);
+
+  for (const leg of res.legs) {
+    if (leg.kind === "walk") {
+      const a = leg.fromStop === null ? "origine" : await nomeFermata(cs.stopIds[leg.fromStop]);
+      const b = leg.toStop === null ? "destinazione" : await nomeFermata(cs.stopIds[leg.toStop]);
+      console.log(`    a piedi ${Math.round(leg.seconds / 60)} min: ${a} → ${b}`);
+    } else {
+      const tripId = cs.tripSourceId[leg.tripIdx];
+      const meta = await sql<{ short_name: string; headsign: string | null }[]>`
+        SELECT r.short_name, t.headsign FROM trips t
+        JOIN routes r ON r.route_id = t.route_id
+        WHERE t.trip_id = ${tripId}
+      `;
+      const linea = meta[0]?.short_name ?? "?";
+      const verso = meta[0]?.headsign ?? "";
+      console.log(
+        `    linea ${linea} verso ${verso}: ${await nomeFermata(cs.stopIds[leg.fromStop])} ${hhmm(leg.departAt, cs.baseEpoch)}` +
+          ` → ${await nomeFermata(cs.stopIds[leg.toStop])} ${hhmm(leg.arriveAt, cs.baseEpoch)}`,
+      );
+      // Controprova: gli orari della tratta devono stare in timetable per quella corsa.
+      const check = await sql<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM timetable
+        WHERE trip_id = ${tripId}
+          AND ((stop_id = ${cs.stopIds[leg.fromStop]} AND departure_s % 86400 = ${leg.departAt % 86400})
+            OR (stop_id = ${cs.stopIds[leg.toStop]}   AND departure_s % 86400 = ${leg.arriveAt % 86400}))
+      `;
+      console.log(`      controprova in timetable: ${check[0].n}/2 capi coincidono`);
+    }
+  }
+}
+
+const cacheNomi = new Map<string, string>();
+async function nomeFermata(stopId: string): Promise<string> {
+  const hit = cacheNomi.get(stopId);
+  if (hit) return hit;
+  const r = await sql<{ name: string }[]>`SELECT name FROM stops WHERE stop_id = ${stopId}`;
+  const n = r[0]?.name ?? stopId;
+  cacheNomi.set(stopId, n);
+  return n;
 }
 
 main().catch(async (e) => {
