@@ -61,6 +61,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <PageTransition>{children}</PageTransition>
         </main>
         <footer className="mx-auto w-full max-w-lg px-4 pb-4 pt-6 text-[11px] leading-relaxed text-neutral-400">
+          {/* Il nome sta qui, dove si mettono le firme: in cima alla home
+              occupava la riga del titolo al posto di "Fermate" senza dire nulla
+              a chi l'app l'ha già aperta. In fondo lo legge chi si chiede "ma
+              chi l'ha fatta?", che è l'unico momento in cui serve saperlo. */}
+          <p className="name mb-2 text-[15px] font-semibold tracking-tight text-neutral-500">
+            Bus Roma
+          </p>
           <p>
             Dati di Roma Servizi per la Mobilità (ATAC, Roma TPL), licenza CC-BY-SA.
             Gli orari in tempo reale dipendono dal feed ATAC e possono mancare.

@@ -8,17 +8,20 @@ import SupportBanner from "@/components/SupportBanner";
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-lg px-4 pt-5">
-      {/* Intestazione su una riga sola: prima i crediti e il sottotitolo si
-          mangiavano 130px dei 900 di viewport, sopra la piega. */}
-      {/* Col marchio accanto al titolo, il sottotitolo "Roma in tempo reale"
-          diventa decorazione: dice ciò che il marchio già mostra, e su uno
-          schermo da 360 pixel rubava lo spazio che serve al tasto del tema. */}
-      <header className="mb-4 flex items-center gap-2.5">
-        <Marchio className="h-8 w-8 shrink-0 text-neutral-900" />
-        <h1 className="name flex-1 text-[26px] font-bold leading-none tracking-tight text-neutral-900">
-          Bus Roma
-        </h1>
+    <div className="mx-auto max-w-lg px-4 pt-4">
+      {/* Il titolo dice cosa c'è in pagina — "Fermate" — come su Percorsi,
+          Ritardi e Preferiti: era l'unica delle quattro a scrivere il nome
+          dell'app al posto del proprio contenuto.
+          Il nome non sparisce, cambia posto: sta nell'icona sul telefono, nel
+          titolo della scheda, nella schermata del primo avvio e nella firma in
+          fondo alla pagina. A chi l'app l'ha già aperta, ripeterglielo in cima
+          non dice niente. Il marchio resta come segno, che invece si riconosce
+          a colpo d'occhio.
+          Niente sottotitolo: il campo di ricerca dice già "cerca una linea o
+          una fermata", e scriverlo due volte è solo spazio rubato agli arrivi. */}
+      <header className="mb-4 flex items-center gap-2">
+        <Marchio className="h-7 w-7 shrink-0 text-neutral-900" />
+        <h1 className="flex-1 text-[22px] font-bold tracking-tight text-neutral-900">Fermate</h1>
         <ThemeToggle />
       </header>
 

@@ -21,7 +21,12 @@ export default function Benvenuto() {
   return (
     <div className="benvenuto mb-5 rounded border border-neutral-300 bg-neutral-50 p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
-        <h2 className="text-[15px] font-bold text-neutral-900">Benvenuto a bordo</h2>
+        {/* Qui il nome ci sta: è l'unico momento in cui chi legge non sa ancora
+            cosa ha aperto. Dalla seconda apertura questo riquadro non c'è più,
+            e nemmeno il nome serve più. */}
+        <h2 className="text-[15px] font-bold text-neutral-900">
+          Benvenuto a bordo di <span className="name">Bus Roma</span>
+        </h2>
         <button
           onClick={() => {
             try {
