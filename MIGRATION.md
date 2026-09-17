@@ -15,20 +15,24 @@ Il progetto AtacWatch nasce su Vercel (frontend + API) + Supabase (PostgreSQL ho
 
 ---
 
-## Fase 1 — Docker & infrastruttura
+## Fase 1 — Docker & infrastruttura ✅
 
-- [ ] Scrivere `docker-compose.yml` con servizi: `db` (postgis), `app` (Next.js), `worker` (RT ingest), `caddy`
-- [ ] Scrivere `Dockerfile` per l'app (Next.js standalone)
-- [ ] Scrivere `Dockerfile.worker` per il worker RT (Node)
-- [ ] Script `scripts/migrate.sh` che applica le migrations in ordine con `psql`
-- [ ] Adattare le migrations: rimuovere `pg_cron`, `pg_net`, Vault, policy RLS anon-facing
+- [x] Scrivere `docker-compose.yml` con servizi: `db` (postgis), `app` (Next.js), `worker` (RT ingest), `caddy`
+- [x] Scrivere `Dockerfile` per l'app (Next.js standalone)
+- [x] Scrivere `Dockerfile.worker` per il worker RT (Node)
+- [x] Script `scripts/migrate.sh` che applica le migrations in ordine con `psql`
+- [x] Adattare le migrations: `0004_realtime_cron.sql` sostituita con no-op (rimossi pg_cron, pg_net, Vault)
+- [x] `deploy/Caddyfile` — reverse proxy con TLS automatico
+- [x] `deploy/atacwatch-ingest.{service,timer}` — systemd timer (sostituzione GitHub Action)
+- [x] `.env.example` — solo `DB_PASSWORD` + `DOMAIN`
+- [x] `next.config.ts` — abilitato `output: "standalone"`
 
 ## Fase 2 — Staccare supabase-js
 
 - [ ] Riscrivere `lib/supabase.ts` → `lib/db.ts` con wrapper `postgres.js`
 - [ ] Aggiornare le 10 route in `app/api/` da `.rpc()`/`.from()` a query SQL dirette
 - [ ] Rimuovere `@supabase/ssr` e `@supabase/supabase-js` da `package.json`
-- [ ] Aggiornare variabili d'ambiente: via `NEXT_PUBLIC_SUPABASE_*` / `SUPABASE_SERVICE_ROLE_KEY`, resta solo `DATABASE_URL`
+- [ ] Rimuovere variabili `NEXT_PUBLIC_SUPABASE_*` e `SUPABASE_SERVICE_ROLE_KEY`; resta solo `DATABASE_URL`
 
 ## Fase 3 — Worker realtime (Deno → Node)
 
@@ -39,15 +43,12 @@ Il progetto AtacWatch nasce su Vercel (frontend + API) + Supabase (PostgreSQL ho
 ## Fase 4 — Ingest statico
 
 - [ ] Eliminare `.github/workflows/ingest-static.yml`
-- [ ] Scrivere `deploy/atacwatch-ingest.timer` + `deploy/atacwatch-ingest.service` (systemd)
 - [ ] Rimuovere `app/api/cron/ingest-static/route.ts` (non più necessario)
 - [ ] Documentare il deploy del timer nel README
 
 ## Fase 5 — Deploy & CI
 
 - [ ] Aggiornare GitHub Actions: build immagine → push GHCR → `ssh vps 'docker compose pull && up -d'`
-- [ ] Scrivere `Caddyfile` con TLS automatico
-- [ ] Scrivere `.env.example` con le sole variabili necessarie
 - [ ] Aggiornare `README.md` con istruzioni VPS
 
 ---
@@ -56,9 +57,12 @@ Il progetto AtacWatch nasce su Vercel (frontend + API) + Supabase (PostgreSQL ho
 
 ```env
 # .env (sul VPS, mai in repo)
-DATABASE_URL=postgres://atacwatch:password@db:5432/atacwatch
-NEXT_PUBLIC_MAPLIBRE_STYLE=...   # se presente
+DB_PASSWORD=<stringa_casuale>          # generata con: openssl rand -base64 32
+DOMAIN=atacwatch.example.com
 ```
+
+Il `DATABASE_URL` è costruito internamente dal `docker-compose.yml`:
+`postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch`
 
 ## Dimensionamento VPS consigliato
 
