@@ -6,6 +6,12 @@ import type { Route, StopResult } from "@/lib/gtfs";
 import { routeTypeInfo, routeName } from "@/lib/gtfs";
 import RouteBadge from "./RouteBadge";
 import { SearchGlyph, StopGlyph } from "./Glyphs";
+import {
+  leggiStorico,
+  aggiungiStorico,
+  svuotaStorico,
+  type VoceStorico,
+} from "@/lib/searchHistory";
 
 export default function SearchBar() {
   const router = useRouter();
@@ -13,6 +19,23 @@ export default function SearchBar() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [stops, setStops] = useState<StopResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [storico, setStorico] = useState<VoceStorico[]>([]);
+  /**
+   * Lo storico compare quando si tocca il campo, come su Google e Safari: a
+   * campo mai toccato la home resta pulita. Non torna mai a false, altrimenti
+   * l'uscita dal campo lo nasconderebbe prima che il tocco su una voce faccia
+   * effetto.
+   */
+  const [toccato, setToccato] = useState(false);
+
+  function vai(voce: VoceStorico) {
+    setStorico(aggiungiStorico(voce));
+    router.push(
+      voce.kind === "line"
+        ? `/line/${encodeURIComponent(voce.id)}`
+        : `/stop/${encodeURIComponent(voce.id)}`,
+    );
+  }
 
   // Gestione immediata della digitazione (negli event handler il setState è ok).
   function onChange(value: string) {
@@ -67,16 +90,70 @@ export default function SearchBar() {
         <input
           value={q}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => {
+            // localStorage non esiste sul server: si legge qui, al primo tocco.
+            setToccato(true);
+            setStorico(leggiStorico());
+          }}
           inputMode="search"
           autoComplete="off"
           placeholder="Cerca una linea o una fermata"
           className="w-full rounded border border-neutral-300 bg-white py-2.5 pl-10 pr-3 text-[16px] outline-none placeholder:text-neutral-400 focus:border-neutral-900"
         />
       </div>
-      {!hasQuery && (
+      {/* Il suggerimento su cosa si può cercare serve al primo uso; dopo, le
+          ultime ricerche sono più utili e prendono il suo posto. */}
+      {!hasQuery && !(toccato && storico.length > 0) && (
         <p className="mt-1.5 text-[12px] text-neutral-500">
           Numero di linea, nome della fermata o numero di palina.
         </p>
+      )}
+
+      {!hasQuery && toccato && storico.length > 0 && (
+        <section className="mt-3">
+          <div className="mb-1 flex items-baseline justify-between">
+            <h3 className="text-[13px] font-semibold text-neutral-500">Ultime ricerche</h3>
+            <button
+              onClick={() => {
+                svuotaStorico();
+                setStorico([]);
+              }}
+              className="text-[13px] text-neutral-500 underline decoration-neutral-300 underline-offset-2 active:text-neutral-900"
+            >
+              Cancella
+            </button>
+          </div>
+          <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
+            {storico.map((v) => (
+              <li key={`${v.kind}-${v.id}`}>
+                <button
+                  onClick={() => vai(v)}
+                  className="flex w-full items-center gap-2.5 py-2.5 text-left active:bg-neutral-200/40"
+                >
+                  {v.kind === "line" ? (
+                    <RouteBadge
+                      shortName={v.shortName}
+                      type={v.type}
+                      color={v.color}
+                      textColor={v.textColor}
+                    />
+                  ) : (
+                    <StopGlyph className="h-5 w-5 shrink-0 text-neutral-400" />
+                  )}
+                  <span className="name min-w-0 flex-1 truncate text-[15px] leading-snug text-neutral-900">
+                    {v.label}
+                  </span>
+                  {v.kind === "stop" && v.code && (
+                    <span className="shrink-0 text-[12px] tabular-nums text-neutral-400">
+                      {v.code}
+                    </span>
+                  )}
+                  <span className="shrink-0 text-neutral-300">›</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {hasQuery && (
@@ -95,7 +172,17 @@ export default function SearchBar() {
                 {routes.map((r) => (
                   <li key={r.route_id}>
                     <button
-                      onClick={() => router.push(`/line/${encodeURIComponent(r.route_id)}`)}
+                      onClick={() =>
+                        vai({
+                          kind: "line",
+                          id: r.route_id,
+                          label: routeName(r.long_name, r.type),
+                          shortName: r.short_name,
+                          type: r.type,
+                          color: r.color,
+                          textColor: r.text_color,
+                        })
+                      }
                       className="flex w-full items-center gap-2.5 py-2.5 text-left active:bg-neutral-200/40"
                     >
                       <RouteBadge shortName={r.short_name} type={r.type} color={r.color} textColor={r.text_color} />
@@ -124,7 +211,9 @@ export default function SearchBar() {
                 {stops.map((s) => (
                   <li key={s.stop_id}>
                     <button
-                      onClick={() => router.push(`/stop/${encodeURIComponent(s.stop_id)}`)}
+                      onClick={() =>
+                        vai({ kind: "stop", id: s.stop_id, label: s.name, code: s.code ?? null })
+                      }
                       className="flex w-full items-center gap-2.5 py-2.5 text-left active:bg-neutral-200/40"
                     >
                       <StopGlyph className="h-5 w-5 shrink-0 text-neutral-400" />
