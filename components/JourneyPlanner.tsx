@@ -21,7 +21,14 @@ type Leg =
       arriveAt: string;
       minutes: number;
     };
-type Plan = { departAt: string; arriveAt: string; durationMin: number; walkMin: number; legs: Leg[] };
+type Plan = {
+  departAt: string;
+  arriveAt: string;
+  durationMin: number;
+  walkMin: number;
+  legs: Leg[];
+  walkOption: { minutes: number; meters: number } | null;
+};
 
 function ora(iso: string): string {
   return new Date(iso).toLocaleTimeString("it-IT", {
@@ -172,6 +179,15 @@ export default function JourneyPlanner() {
               </li>
             ))}
           </ol>
+
+          {plan.walkOption && (
+            <p className="border-t border-neutral-200 pt-3 text-[13px] text-neutral-600">
+              Oppure <span className="font-semibold text-neutral-900">tutto a piedi</span> in{" "}
+              {plan.walkOption.minutes} min ({(plan.walkOption.meters / 1000).toFixed(1)} km in linea
+              d&apos;aria)
+              {plan.walkOption.minutes < plan.durationMin && ", che è più rapido"}.
+            </p>
+          )}
 
           <p className="mt-3 text-[12px] leading-relaxed text-neutral-500">
             Orari da tabella, senza il tempo reale: un mezzo in ritardo cambia le

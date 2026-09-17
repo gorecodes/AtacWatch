@@ -130,6 +130,11 @@ async function main() {
   await provaViaggioCoord(cs, fp, { lat: 41.9022, lon: 12.4539, nome: "San Pietro" },
                                   { lat: 41.8890, lon: 12.4700, nome: "Trastevere" }, oggiAlle(10));
 
+  // Caso segnalato dall'utente: l'API rispondeva "vai a piedi" per 2267 metri
+  // (37 minuti) invece di proporre il trasporto pubblico. Qui si controlla che
+  // un itinerario in autobus esista davvero.
+  await provaViaggio(cs, fp, "73780", "72453", oggiAlle(10), "Rapagnano/Apiro → Galline Bianche/Baccano");
+
   await provaViaggio(cs, fp, "73992", "70078", oggiAlle(10), "diretto sulla 64");
   await provaViaggio(cs, fp, "73992", "72983", oggiAlle(10), "corsa + trasferimento a piedi");
   // 24.5 = domani alle 00:30, l'ora in cui servono le corse con departure_s > 86400

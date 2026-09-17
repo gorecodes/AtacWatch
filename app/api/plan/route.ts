@@ -4,10 +4,7 @@ import { loadConnections } from "@/lib/plan/connections";
 import { loadFootpaths } from "@/lib/plan/footpaths";
 import { findAccess, walkDistance } from "@/lib/plan/access";
 import { csaEarliestArrival, type Leg } from "@/lib/plan/csa";
-import { walkSeconds } from "@/lib/plan/policy";
-
-/** Oltre questa distanza "andare a piedi" non è una risposta accettabile. */
-const MAX_WALK_ONLY_M = 2500;
+import { walkSeconds, MAX_WALK_ONLY_S, MAX_WALK_ALT_M } from "@/lib/plan/policy";
 
 /** Data locale romana dell'istante indicato: decide quali servizi caricare. */
 function romeDate(epochMs: number): string {
@@ -81,39 +78,37 @@ export async function GET(req: Request) {
       walkDistance(sql, fromLat, fromLon, toLat, toLon),
     ]);
 
-    // Andare a piedi è un itinerario come gli altri, e per tratte brevi vince:
-    // senza questo confronto il router propone due autobus per fare 300 metri.
     const soloPiediS = walkSeconds(direttoM);
-    const soloPiediArrivo = direttoM <= MAX_WALK_ONLY_M ? departEpoch + soloPiediS : Infinity;
+    const camminabile = direttoM <= MAX_WALK_ALT_M;
 
     const res =
       access.length > 0 && egress.length > 0
         ? csaEarliestArrival(cs, fp, access, egress, departEpoch)
         : null;
 
-    const transitoArrivo = res ? cs.baseEpoch + res.arriveAt : Infinity;
+    // Andare a piedi diventa la risposta principale solo se è breve, oppure se
+    // non esiste alcun itinerario in mezzo pubblico. Quando il mezzo esiste ma
+    // è più lento, resta lui la risposta e il cammino compare come
+    // alternativa: chi chiede un percorso vuole vedere il percorso.
+    const piediComePrincipale =
+      camminabile && (soloPiediS <= MAX_WALK_ONLY_S || res === null);
 
-    if (soloPiediArrivo <= transitoArrivo) {
-      if (!Number.isFinite(soloPiediArrivo)) {
-        return NextResponse.json(
-          { error: "nessun itinerario trovato", legs: [] },
-          { status: 404 },
-        );
-      }
+    const camminata = {
+      kind: "walk" as const,
+      from: null,
+      to: null,
+      minutes: Math.max(1, Math.round(soloPiediS / 60)),
+      meters: direttoM,
+    };
+
+    if (piediComePrincipale) {
       return NextResponse.json({
         departAt: new Date(departEpoch * 1000).toISOString(),
-        arriveAt: new Date(soloPiediArrivo * 1000).toISOString(),
-        durationMin: Math.round(soloPiediS / 60),
-        walkMin: Math.round(soloPiediS / 60),
-        legs: [
-          {
-            kind: "walk" as const,
-            from: null,
-            to: null,
-            minutes: Math.round(soloPiediS / 60),
-            meters: direttoM,
-          },
-        ],
+        arriveAt: new Date((departEpoch + soloPiediS) * 1000).toISOString(),
+        durationMin: camminata.minutes,
+        walkMin: camminata.minutes,
+        legs: [camminata],
+        walkOption: null,
       });
     }
 
@@ -195,6 +190,8 @@ export async function GET(req: Request) {
       durationMin: Math.round((res.arriveAt - (departEpoch - cs.baseEpoch)) / 60),
       walkMin: Math.round(walkS / 60),
       legs,
+      // Presente solo se camminare è un'alternativa sensata da confrontare.
+      walkOption: camminabile ? { minutes: camminata.minutes, meters: direttoM } : null,
     });
   } catch (e) {
     console.error("[plan]", e);

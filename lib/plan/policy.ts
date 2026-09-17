@@ -35,6 +35,21 @@ export const ACCESS_RADIUS_M = 800;
 /** Numero massimo di cambi considerati: oltre, l'itinerario non è più accettabile. */
 export const MAX_LEGS = 5;
 
+/**
+ * Oltre questa durata, andare a piedi non è più la risposta PRINCIPALE anche se
+ * è la più rapida.
+ *
+ * Nasce da una segnalazione: da Rapagnano/Apiro a Galline Bianche/Baccano ci
+ * sono 2267 metri in linea d'aria, cioè 37 minuti di cammino, contro 64 minuti
+ * di autobus con tre cambi. Il router rispondeva "vai a piedi", che sui minuti
+ * era corretto ma come risposta era inaccettabile: chi chiede un percorso
+ * vuole vedere il percorso. A piedi resta proposto come alternativa.
+ */
+export const MAX_WALK_ONLY_S = 900;
+
+/** Oltre questa distanza camminare non si propone nemmeno come alternativa. */
+export const MAX_WALK_ALT_M = 3500;
+
 export function walkSeconds(meters: number): number {
   return Math.round((meters * WALK_DETOUR) / WALK_SPEED_MS);
 }
