@@ -21,6 +21,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch
@@ -39,6 +41,8 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
     depends_on:
       db:
         condition: service_healthy
