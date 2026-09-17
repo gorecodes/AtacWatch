@@ -103,7 +103,8 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
       )}
       {!loading && !error && arrivals.length === 0 && (
         <p className="px-4 py-6 text-[14px] text-neutral-500">
-          Niente. Il vuoto. Per i prossimi 90 minuti qui non passa nulla.
+          Niente. Il vuoto. Guardo 90 minuti avanti e non trovo nulla —
+          più in là non so.
         </p>
       )}
 

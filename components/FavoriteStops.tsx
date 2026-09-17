@@ -43,7 +43,7 @@ function FavoriteCard({ stop_id, name }: { stop_id: string; name: string }) {
       {!ready && <p className="text-[13px] text-neutral-400">…</p>}
 
       {ready && arrivals.length === 0 && (
-        <p className="text-[13px] text-neutral-500">Per 90 minuti non passa nulla</p>
+        <p className="text-[13px] text-neutral-500">Niente nei prossimi 90 minuti</p>
       )}
 
       {ready && arrivals.length > 0 && (
