@@ -23,6 +23,7 @@ export function getSql(): ReturnType<typeof postgres> {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL mancante");
     global.__pgSql = postgres(url, {
+      ssl: false,          // DB interno a Docker, no TLS
       max: 10,             // connessioni nella pool
       idle_timeout: 30,    // chiude connessioni inattive dopo 30s
       connect_timeout: 10, // timeout connessione iniziale

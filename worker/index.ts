@@ -18,6 +18,7 @@ if (!DATABASE_URL) {
 }
 
 const sql = postgres(DATABASE_URL, {
+  ssl: false,        // DB interno a Docker, no TLS
   max: 5,            // pool piccola: il worker fa un upsert alla volta
   idle_timeout: 60,
   connect_timeout: 10,

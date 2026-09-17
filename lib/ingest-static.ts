@@ -140,7 +140,7 @@ export async function ingestStatic(opts: {
   const zip = await openZip(buffer);
   const entries = await collectEntries(zip);
 
-  const sql = postgres(opts.databaseUrl, { ssl: "require", prepare: false, max: 4 });
+  const sql = postgres(opts.databaseUrl, { ssl: false, prepare: false, max: 4 });
 
   try {
     log("Svuoto le tabelle di staging…");
