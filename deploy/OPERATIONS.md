@@ -120,25 +120,46 @@ docker compose up -d             # avvia tutto
 
 ---
 
-## 6. Deploy su VPS
+## 6. Deploy su VPS (Fase 6)
+
+### Prima installazione
 
 ```bash
-# Sul VPS (una tantum)
+# Sul VPS
 git clone <repo> /opt/atacwatch
 cd /opt/atacwatch
 cp .env.example .env
 # imposta DB_PASSWORD nel .env
-# NON copiare docker-compose.override.yml
+# NON portare docker-compose.override.yml
 
-# Prima avviata
+# Avvia DB, applica migrations, avvia tutto
 docker compose up -d db
 docker compose run --rm migrate
 docker compose up -d
+```
 
-# Aggiornamenti successivi
+### Systemd timer (ETL statico)
+
+```bash
+sudo cp deploy/atacwatch-ingest.service /etc/systemd/system/
+sudo cp deploy/atacwatch-ingest.timer   /etc/systemd/system/
+# Modifica WorkingDirectory nel .service con il percorso reale
+sudo systemctl daemon-reload
+sudo systemctl enable --now atacwatch-ingest.timer
+```
+
+### Aggiornamenti successivi (manuali, prima dell'automazione CI)
+
+```bash
+cd /opt/atacwatch
 git pull
 docker compose up -d --build
 ```
+
+### Automazione via CI (dopo Fase 5)
+
+L'Action di Fase 5 aggiungerà uno step SSH che esegue automaticamente
+`docker compose pull && docker compose up -d` ad ogni push su `main`.
 
 ---
 
@@ -238,6 +259,7 @@ docker compose up -d --build app
 
 - [x] **Fase 1** — Docker, Caddy, systemd, migrate.sh
 - [x] **Fase 2** — Staccare supabase-js → postgres.js diretto
-- [ ] **Fase 3** — Worker RT (Deno → Node)
-- [ ] **Fase 4** — Rimozione GitHub Action e route cron
-- [ ] **Fase 5** — CI/CD (build → GHCR → ssh deploy)
+- [x] **Fase 3** — Worker RT (Deno → Node)
+- [x] **Fase 4** — Rimozione GitHub Action e route cron
+- [ ] **Fase 5** — CI/CD: build immagine → push GHCR
+- [ ] **Fase 6** — Deploy su VPS via SSH + automazione CI
