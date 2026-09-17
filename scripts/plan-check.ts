@@ -13,6 +13,7 @@ import postgres from "postgres";
 import { loadConnections, type ConnectionSet } from "../lib/plan/connections";
 import { loadFootpaths } from "../lib/plan/footpaths";
 import { csaEarliestArrival } from "../lib/plan/csa";
+import { findAccess } from "../lib/plan/access";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -124,12 +125,76 @@ async function main() {
   // Mezzanotte di baseEpoch è il giorno PRIMA di oggi, quindi +86400 per oggi.
   const oggiAlle = (ora: number) => cs.baseEpoch + 86400 + ora * 3600;
 
+  await provaViaggioCoord(cs, fp, { lat: 41.8902, lon: 12.4922, nome: "Colosseo" },
+                                  { lat: 41.8300, lon: 12.4700, nome: "EUR Fermi" }, oggiAlle(10));
+  await provaViaggioCoord(cs, fp, { lat: 41.9022, lon: 12.4539, nome: "San Pietro" },
+                                  { lat: 41.8890, lon: 12.4700, nome: "Trastevere" }, oggiAlle(10));
+
   await provaViaggio(cs, fp, "73992", "70078", oggiAlle(10), "diretto sulla 64");
   await provaViaggio(cs, fp, "73992", "72983", oggiAlle(10), "corsa + trasferimento a piedi");
   // 24.5 = domani alle 00:30, l'ora in cui servono le corse con departure_s > 86400
   await provaViaggio(cs, fp, "73992", "70078", oggiAlle(24.5), "notturno oltre mezzanotte");
 
   await sql.end();
+}
+
+type Punto = { lat: number; lon: number; nome: string };
+
+async function provaViaggioCoord(
+  cs: ConnectionSet,
+  fp: Awaited<ReturnType<typeof loadFootpaths>>,
+  da: Punto,
+  a: Punto,
+  partenza: number,
+) {
+  console.log(`\n── ${da.nome} → ${a.nome} (da coordinate) ──`);
+
+  const t0 = Date.now();
+  const [access, egress] = await Promise.all([
+    findAccess(sql, cs, da.lat, da.lon),
+    findAccess(sql, cs, a.lat, a.lon),
+  ]);
+  const msAccess = Date.now() - t0;
+  console.log(`  fermate di accesso: ${access.length} (la più vicina a ${access[0]?.meters}m), uscita: ${egress.length} (${egress[0]?.meters}m) · ${msAccess} ms`);
+
+  if (access.length === 0 || egress.length === 0) {
+    console.log(`  nessuna fermata nel raggio`);
+    return;
+  }
+
+  const t1 = Date.now();
+  const res = csaEarliestArrival(cs, fp, access, egress, partenza);
+  const msCsa = Date.now() - t1;
+
+  if (!res) {
+    console.log(`  NESSUN ITINERARIO`);
+    return;
+  }
+
+  const durata = Math.round((res.arriveAt - (partenza - cs.baseEpoch)) / 60);
+  console.log(`  partenza ${hhmm(partenza - cs.baseEpoch, cs.baseEpoch)} → arrivo ${hhmm(res.arriveAt, cs.baseEpoch)} · ${durata} min · CSA ${msCsa} ms`);
+
+  let camminoTot = 0;
+  for (const leg of res.legs) {
+    if (leg.kind === "walk") {
+      camminoTot += leg.seconds;
+      const x = leg.fromStop === null ? da.nome : await nomeFermata(cs.stopIds[leg.fromStop]);
+      const y = leg.toStop === null ? a.nome : await nomeFermata(cs.stopIds[leg.toStop]);
+      console.log(`    a piedi ${Math.round(leg.seconds / 60)} min: ${x} → ${y}`);
+    } else {
+      const tripId = cs.tripSourceId[leg.tripIdx];
+      const meta = await sql<{ short_name: string; headsign: string | null }[]>`
+        SELECT r.short_name, t.headsign FROM trips t
+        JOIN routes r ON r.route_id = t.route_id WHERE t.trip_id = ${tripId}
+      `;
+      console.log(
+        `    linea ${meta[0]?.short_name ?? "?"} verso ${meta[0]?.headsign ?? ""}: ` +
+          `${await nomeFermata(cs.stopIds[leg.fromStop])} ${hhmm(leg.departAt, cs.baseEpoch)} → ` +
+          `${await nomeFermata(cs.stopIds[leg.toStop])} ${hhmm(leg.arriveAt, cs.baseEpoch)}`,
+      );
+    }
+  }
+  console.log(`    cammino totale: ${Math.round(camminoTot / 60)} min`);
 }
 
 async function provaViaggio(
