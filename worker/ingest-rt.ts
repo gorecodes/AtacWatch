@@ -153,7 +153,8 @@ export async function ingestRt(sql: postgres.Sql): Promise<{ ok: true; stats: In
     const updates = [...updatesMap.values()];
     // Swap ATOMICO lato Postgres: delete+insert in un'unica transazione, così
     // i lettori non vedono mai la tabella vuota (vedi 0009_hardening.sql).
-    await sql`SELECT replace_trip_updates(${sql.json(updates)})`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await sql`SELECT replace_trip_updates(${sql.json(updates as any)})`;
     stats.tripUpdates = updates.length;
 
     // ---- Service Alerts: replace completo -------------------------------------
@@ -183,7 +184,8 @@ export async function ingestRt(sql: postgres.Sql): Promise<{ ok: true; stats: In
       });
     }
     const alerts = [...alertsMap.values()];
-    await sql`SELECT replace_service_alerts(${sql.json(alerts)})`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await sql`SELECT replace_service_alerts(${sql.json(alerts as any)})`;
     stats.alerts = alerts.length;
 
     // ---- feed_meta ------------------------------------------------------------
