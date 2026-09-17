@@ -18,11 +18,11 @@ const barlowCond = Barlow_Semi_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: "AtacWatch — mezzi di Roma in tempo reale",
+  title: "Bus Roma — mezzi in tempo reale",
   description:
     "Bus, tram e metro di Roma in tempo reale: cerca le linee, vedi gli arrivi alle fermate e i mezzi sulla mappa.",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "AtacWatch" },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Bus Roma" },
 };
 
 export const viewport: Viewport = {

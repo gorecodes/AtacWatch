@@ -9,7 +9,7 @@ export default function HomePage() {
           mangiavano 130px dei 900 di viewport, sopra la piega. */}
       <header className="mb-4 flex items-baseline justify-between gap-3">
         <h1 className="name text-[26px] font-bold leading-none tracking-tight text-neutral-900">
-          AtacWatch
+          Bus Roma
         </h1>
         <p className="shrink-0 text-[13px] text-neutral-500">Roma in tempo reale</p>
       </header>

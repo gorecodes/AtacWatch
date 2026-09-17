@@ -1,7 +1,7 @@
 // Service worker: cache "stale-while-revalidate" per la shell statica
 // + gestione notifiche push (Web Push API).
 // Le richieste /api/ NON vengono mai cacheate (dati in tempo reale).
-const CACHE = "attaccate-v1";
+const CACHE = "busroma-v1";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -19,11 +19,11 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("push", (e) => {
   const data = e.data?.json() ?? {};
   e.waitUntil(
-    self.registration.showNotification(data.title ?? "AtacWatch", {
+    self.registration.showNotification(data.title ?? "Bus Roma", {
       body: data.body ?? "",
       icon: "/icon.svg",
       badge: "/icon.svg",
-      tag: data.tag ?? "atacwatch",
+      tag: data.tag ?? "busroma",
       renotify: false,
     }),
   );
