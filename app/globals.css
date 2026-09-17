@@ -58,7 +58,6 @@
 html,
 body {
   font-family: var(--font-sans);
-  overscroll-behavior-y: none;
 }
 
 /* I nomi di fermata e di capolinea: condensati per guadagnare caratteri. */
