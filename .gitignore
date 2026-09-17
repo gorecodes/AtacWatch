@@ -44,3 +44,6 @@ next-env.d.ts
 # Override locale di docker compose (espone :3000, spegne Caddy).
 # Fuori da git: sul VPS farebbe partire Caddy nel profilo sbagliato.
 docker-compose.override.yml
+
+# Dati di routing pedonale OSRM: 324MB rigenerabili con scripts/osrm-build.sh
+/osrm/
