@@ -22,6 +22,18 @@ I dati sono in `vehicle_positions`, aggiornati ogni 60s. È un'esperienza
 diversa dall'approccio fermata-per-fermata: più esplorativa che utile, ma è
 la cosa che fa dire "bella" a chi la vede.
 
+**Mappa dell'itinerario** (accantonata il 2026-09-17, tutto pronto)
+Disegnare il percorso calcolato su una mappa. Era la "fase 6" del piano del
+calcolo percorsi e i pezzi ci sono già tutti:
+- i tratti a piedi hanno il tracciato reale, che OSRM restituisce insieme alla
+  distanza (basta chiedere `overview=full` invece di `false` in
+  `lib/plan/walking.ts`);
+- i tratti in mezzo pubblico si ricavano tagliando `route_shapes` tra le due
+  fermate della tratta, con `ST_LineLocatePoint` + `ST_LineSubstring`;
+- `components/RouteMap.tsx` esiste già e disegna tracciati e fermate.
+Attenzione: su questa macchina i layer WebGL non si renderizzano negli
+screenshot, quindi la verifica visiva tocca all'utente.
+
 ## Dipendono dallo storico ritardi
 
 La tabella `delay_stats` accumula da 2026-09-17 (vedi

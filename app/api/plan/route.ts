@@ -20,9 +20,27 @@ import { walkSeconds, MAX_WALK_ONLY_S, MAX_WALK_ALT_M } from "@/lib/plan/policy"
 const ACCESS_TIGHT_M = 350;
 
 /**
- * Attesa massima prima della partenza. Serve a scartare i percorsi la cui
- * corsa utile è molto più tardi: con i tetti di cambi bassi la scansione ne
- * trovava di formalmente ottimi che però partivano il giorno dopo.
+ * Finestra entro cui si cercano le partenze, e attesa massima accettata.
+ *
+ * L'orario NON deve decidere quali percorsi esistono, solo quali servizi
+ * circolano in quella fascia: di giorno non si propongono i notturni, di notte
+ * non si propongono i diurni. Un percorso con una corsa ogni ora deve comparire
+ * comunque, altrimenti l'elenco cambia a seconda del minuto in cui si chiede.
+ *
+ * Tre ore sono il compromesso: abbastanza da pescare le linee rade, non tante
+ * da sconfinare nella fascia di servizio successiva.
+ */
+const FINESTRA_MIN = 180;
+
+/** Passo di campionamento dentro la finestra. */
+const PASSO_MIN = 30;
+
+/**
+ * Attesa massima perché un percorso sia una scelta disponibile.
+ *
+ * È questo, e non la finestra, a fare da filtro di fascia: chiedendo alle 3 di
+ * notte un percorso in metropolitana ha la prima corsa oltre due ore dopo e
+ * sparisce, mentre i notturni restano. Senza, comparivano i diurni di notte.
  */
 const MAX_WAIT_MIN = 90;
 
@@ -117,12 +135,20 @@ export async function GET(req: Request) {
     // fretta, chi non vuole cambiare e chi non vuole camminare ne vogliono tre
     // diversi — quindi si generano e si mostrano tutti, come fa Google Maps.
     //
-    // Si scandisce per ogni tetto di cambi E da più orari di partenza. Gli
-    // orari servono perché un percorso ottimo può avere la corsa utile venti
-    // minuti dopo: cercando solo dall'istante richiesto resterebbe invisibile,
-    // pur essendo il migliore per chi non ha l'obbligo di partire adesso.
-    // Ogni scansione costa un paio di millisecondi.
-    const offsets = [0, 20 * 60, 45 * 60];
+    // Si scandisce per ogni tetto di cambi E da più orari dentro la finestra.
+    // Serve perché la scansione da un solo istante restituisce il percorso che
+    // arriva prima, non tutti i percorsi: uno più semplice la cui corsa passa
+    // un'ora dopo resterebbe invisibile, pur essendo il migliore per chi non ha
+    // l'obbligo di partire in quel minuto. Ogni scansione costa un paio di
+    // millisecondi, quindi campionare la finestra è gratis.
+    //
+    // I campioni sono ancorati all'ORA TONDA, non all'istante richiesto: così
+    // chiedere alle 09:00 o alle 09:17 esplora gli stessi orari e restituisce
+    // lo stesso elenco di percorsi. Ancorandoli alla richiesta, la griglia si
+    // spostava col minuto e l'elenco cambiava sotto le dita.
+    const ancora = Math.floor(departEpoch / 3600) * 3600;
+    const offsets: number[] = [];
+    for (let m = 0; m <= FINESTRA_MIN; m += PASSO_MIN) offsets.push(ancora - departEpoch + m * 60);
     const risultati =
       access.length > 0 && egress.length > 0
         ? offsets
@@ -282,8 +308,12 @@ export async function GET(req: Request) {
          * l'autobus era appena passato.
          */
         durationMin: Math.round((r.arriveAt - r.departAt) / 60),
-        /** Quanto manca alla partenza: informazione utile, tenuta separata. */
-        waitMin: Math.max(0, Math.round((r.departAt - (departEpoch - cs.baseEpoch)) / 60)),
+        /**
+         * Quanto manca alla partenza. NON si azzera con un max(0): un campione
+         * ancorato all'ora tonda può partire prima dell'istante richiesto, e
+         * quell'istanza non è percorribile. Serve saperlo per scartarla.
+         */
+        waitMin: Math.round((r.departAt - (departEpoch - cs.baseEpoch)) / 60),
         walkMin: Math.round(walkS / 60),
         walkSeconds: walkS,
         rides: corse.length,
@@ -304,24 +334,24 @@ export async function GET(req: Request) {
     // più tardi, con più cambi E più cammino di un altro non è una scelta, è
     // rumore. Restano solo quelle in cui si rinuncia a qualcosa per guadagnare
     // altro, che è ciò su cui vale la pena decidere.
-    // Per ogni percorso si tiene l'istanza migliore: tempo di viaggio più
-    // breve e, a parità, attesa minore. La stessa combinazione di linee
-    // trovata partendo venti minuti dopo non è un'opzione in più.
+    // Per ogni percorso si tiene la PROSSIMA istanza percorribile: quella che
+    // parte per prima non prima dell'orario richiesto. La stessa combinazione
+    // di linee trovata campionando un'ora dopo non è un'opzione in più, è lo
+    // stesso percorso più tardi; e le istanze che partono prima della richiesta
+    // non sono percorribili e vanno scartate, non mostrate con attesa zero.
     const migliori = new Map<string, (typeof rese)[number]>();
     for (const o of rese) {
+      if (o.waitMin < 0) continue;
       const p = migliori.get(o.firma);
-      if (
-        !p ||
-        o.durationMin < p.durationMin ||
-        (o.durationMin === p.durationMin && o.waitMin < p.waitMin)
-      ) {
-        migliori.set(o.firma, o);
-      }
+      if (!p || o.waitMin < p.waitMin) migliori.set(o.firma, o);
     }
     const uniche = [...migliori.values()];
-    // Due filtri di buon senso. Un'attesa enorme significa che la corsa utile
-    // di quel percorso è il giorno dopo: con i tetti di cambi bassi la
-    // scansione le trovava, formalmente non dominate perché senza cambi.
+    if (uniche.length === 0) {
+      return NextResponse.json({ error: "nessun itinerario trovato", options: [] }, { status: 404 });
+    }
+    // Due filtri di buon senso. Fuori dalla finestra significa che il servizio
+    // di quel percorso appartiene a un'altra fascia — i diurni chiesti di
+    // notte, i notturni chiesti di giorno — e non è una scelta disponibile.
     // E un percorso che dura il doppio del migliore non è una scelta.
     const piuRapida = Math.min(...uniche.map((o) => o.durationMin));
     const sensate = uniche.filter(
