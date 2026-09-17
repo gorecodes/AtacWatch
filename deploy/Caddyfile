@@ -7,7 +7,7 @@
 #    NON usare "Flexible" che lascia il tratto verso il VPS in chiaro)
 :80 {
 	handle /hooks/* {
-		reverse_proxy localhost:9000
+		reverse_proxy host.docker.internal:9000
 	}
 	reverse_proxy app:3000
 }
