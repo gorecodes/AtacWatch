@@ -66,10 +66,11 @@ export interface IngestStats {
   vehicles: number;
   tripUpdates: number;
   alerts: number;
+  delayGroups: number;
 }
 
 export async function ingestRt(sql: postgres.Sql): Promise<{ ok: true; stats: IngestStats } | { ok: false; error: string }> {
-  const stats: IngestStats = { vehicles: 0, tripUpdates: 0, alerts: 0 };
+  const stats: IngestStats = { vehicles: 0, tripUpdates: 0, alerts: 0, delayGroups: 0 };
   const nowIso = new Date().toISOString();
 
   // Guard anti-sovrapposizione: se una run precedente è ancora in corso
@@ -165,6 +166,11 @@ export async function ingestRt(sql: postgres.Sql): Promise<{ ok: true; stats: In
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await sql`SELECT replace_trip_updates(${sql.json(updates as any)})`;
     stats.tripUpdates = updates.length;
+
+    // Campiona i ritardi correnti nel bucket orario (vedi 0016_delay_stats.sql).
+    // Va DOPO lo swap: legge trip_updates appena aggiornata.
+    const delayRows = await sql<{ n: number }[]>`SELECT record_delay_sample() AS n`;
+    stats.delayGroups = delayRows[0]?.n ?? 0;
 
     // ---- Service Alerts: replace completo -------------------------------------
     const al = await fetchFeed(FEEDS.alerts);
