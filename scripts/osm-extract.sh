@@ -45,9 +45,16 @@ if [ ! -f centro.osm.pbf ]; then
   curl -L --fail -o centro.osm.pbf "$URL"
 fi
 
-if [ ! -f roma.osm.pbf ]; then
+if [ ! -s roma.osm.pbf ]; then
+  # --strategy=simple: la strategia predefinita (complete_ways) tiene in RAM
+  # l'indice dei nodi di TUTTO il file da 366 MB, e sul VPS da 4GB con Postgres
+  # acceso viene uccisa dal kernel (uscita 137). "simple" fa una sola passata
+  # con memoria minima; in cambio le vie a filo del riquadro possono perdere i
+  # nodi esterni, che è irrilevante perché il riquadro è già allargato di 3 km
+  # oltre le fermate più periferiche.
   echo "▶ Ritaglio Roma…"
-  osmium extract --bbox "$BBOX" --overwrite -o /data/roma.osm.pbf /data/centro.osm.pbf
+  osmium extract --strategy=simple --bbox "$BBOX" --overwrite \
+    -o /data/roma.osm.pbf /data/centro.osm.pbf
 fi
 
 # I filtri sono in due passaggi perché tags-filter mette in OR le espressioni:
@@ -55,27 +62,34 @@ fi
 # referenziati vengono conservati di default, altrimenti le vie perderebbero
 # i nodi e quindi la geometria.
 
+# L'indice delle posizioni dei nodi va su DISCO e non in memoria: serve a
+# ricostruire la geometria delle vie, e in RAM è l'altro punto in cui
+# l'estrazione viene uccisa su una macchina piccola. Su file occupa ~16 MB.
+esporta() { # $1 = pbf di ingresso, $2 = geojsonl di uscita
+  rm -f "$WORK/nodes.idx"
+  osmium export --overwrite -f geojsonseq --add-unique-id=type_id \
+    --index-type=sparse_file_array,/data/nodes.idx \
+    -o "/data/$2" "/data/$1"
+}
+
 echo "▶ Strade con nome…"
-osmium tags-filter --overwrite -o /data/_h.pbf   /data/roma.osm.pbf w/highway
-osmium tags-filter --overwrite -o /data/strade.pbf /data/_h.pbf     w/name
-osmium export --overwrite -f geojsonseq --add-unique-id=type_id \
-  -o /data/strade.geojsonl /data/strade.pbf
+osmium tags-filter --overwrite -o /data/_h.pbf     /data/roma.osm.pbf w/highway
+osmium tags-filter --overwrite -o /data/strade.pbf /data/_h.pbf       w/name
+esporta strade.pbf strade.geojsonl
 
 echo "▶ Numeri civici…"
 osmium tags-filter --overwrite -o /data/civici.pbf /data/roma.osm.pbf \
   n/addr:housenumber w/addr:housenumber
-osmium export --overwrite -f geojsonseq --add-unique-id=type_id \
-  -o /data/civici.geojsonl /data/civici.pbf
+esporta civici.pbf civici.geojsonl
 
 echo "▶ Punti di interesse con nome…"
 osmium tags-filter --overwrite -o /data/_p.pbf /data/roma.osm.pbf \
   n/amenity n/tourism n/shop n/leisure n/railway=station n/public_transport=station \
   w/amenity w/tourism w/shop w/leisure w/railway=station
 osmium tags-filter --overwrite -o /data/poi.pbf /data/_p.pbf n/name w/name
-osmium export --overwrite -f geojsonseq --add-unique-id=type_id \
-  -o /data/poi.geojsonl /data/poi.pbf
+esporta poi.pbf poi.geojsonl
 
-rm -f _h.pbf _p.pbf
+rm -f _h.pbf _p.pbf nodes.idx
 
 echo
 echo "▶ Fatto:"
