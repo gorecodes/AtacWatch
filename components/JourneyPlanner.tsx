@@ -26,8 +26,8 @@ type Opzione = {
   arriveAt: string;
   /** Da quando esci di casa a quando arrivi: non include l'attesa iniziale. */
   durationMin: number;
-  /** Quanto manca alla partenza. */
-  waitMin: number;
+  /** Gli orari sono di una corsa a titolo d'esempio, non "la" partenza. */
+  esempio: boolean;
   walkMin: number;
   rides: number;
   lines: string[];
@@ -188,10 +188,7 @@ export default function JourneyPlanner() {
                         <span className={i === scelta ? "font-bold" : "font-medium"}>
                           {o.durationMin} min
                         </span>
-                        <span className="text-neutral-500">
-                          {" "}di viaggio
-                          {o.waitMin > 0 && ` · parti tra ${o.waitMin} min`}
-                        </span>
+                        <span className="text-neutral-500"> di viaggio</span>
                       </span>
                       <span className="mt-0.5 block truncate text-[13px] text-neutral-600">
                         {o.lines.length > 0 ? o.lines.join(" › ") : "tutto a piedi"}
@@ -206,14 +203,20 @@ export default function JourneyPlanner() {
           )}
 
           <div className="flex items-baseline justify-between border-b border-neutral-300 pb-2">
+            {/* Gli orari sono di una corsa d'esempio: il percorso vale a
+                prescindere, e dirlo evita che sembrino "la" partenza. */}
             <p className="text-[19px] font-bold tabular-nums text-neutral-900">
               {ora(mostrata.departAt)} → {ora(mostrata.arriveAt)}
+              {mostrata.esempio && (
+                <span className="ml-1.5 align-middle text-[12px] font-normal tabular-nums text-neutral-500">
+                  es.
+                </span>
+              )}
             </p>
             <p className="text-right text-[13px] text-neutral-600">
               {mostrata.durationMin} min di viaggio
               <br />
               {mostrata.walkMin} a piedi
-              {mostrata.waitMin > 0 && ` · parti tra ${mostrata.waitMin}`}
             </p>
           </div>
 

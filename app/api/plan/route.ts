@@ -20,29 +20,36 @@ import { walkSeconds, MAX_WALK_ONLY_S, MAX_WALK_ALT_M } from "@/lib/plan/policy"
 const ACCESS_TIGHT_M = 350;
 
 /**
- * Finestra entro cui si cercano le partenze, e attesa massima accettata.
+ * Finestra di campionamento, a cavallo dell'ora richiesta.
  *
  * L'orario NON deve decidere quali percorsi esistono, solo quali servizi
  * circolano in quella fascia: di giorno non si propongono i notturni, di notte
- * non si propongono i diurni. Un percorso con una corsa ogni ora deve comparire
- * comunque, altrimenti l'elenco cambia a seconda del minuto in cui si chiede.
+ * non si propongono i diurni.
  *
- * Tre ore sono il compromesso: abbastanza da pescare le linee rade, non tante
- * da sconfinare nella fascia di servizio successiva.
+ * Si campiona anche INDIETRO, ed è la parte controintuitiva: un percorso la
+ * cui corsa è appena passata è un percorso validissimo, e guardando solo in
+ * avanti spariva. Guardando indietro lo si trova comunque.
+ *
+ * La finestra è stretta di proposito. Con tre ore in avanti, chiedendo alle 3
+ * di notte si arrivava alle 6 e ricomparivano gli autobus diurni, che a
+ * quell'ora non sono una scelta. Così invece resta dentro la fascia.
  */
-const FINESTRA_MIN = 180;
+const FINESTRA_INDIETRO_MIN = 60;
+const FINESTRA_AVANTI_MIN = 90;
 
 /** Passo di campionamento dentro la finestra. */
 const PASSO_MIN = 30;
 
 /**
- * Attesa massima perché un percorso sia una scelta disponibile.
+ * NON esiste un filtro sull'attesa, ed è deliberato.
  *
- * È questo, e non la finestra, a fare da filtro di fascia: chiedendo alle 3 di
- * notte un percorso in metropolitana ha la prima corsa oltre due ore dopo e
- * sparisce, mentre i notturni restano. Senza, comparivano i diurni di notte.
+ * Che una singola corsa sia già passata non dice niente sulla bontà di un
+ * percorso: l'elenco deve mostrare i percorsi MIGLIORI, non quelli ancora
+ * prendibili in questo minuto. A decidere cosa circola è la finestra, che
+ * resta dentro la fascia di servizio e tiene quindi fuori i diurni di notte e
+ * i notturni di giorno. Quando serve sapere a che ora passa il prossimo, la
+ * risposta è nella pagina della fermata.
  */
-const MAX_WAIT_MIN = 90;
 
 /** Data locale romana dell'istante indicato: decide quali servizi caricare. */
 function romeDate(epochMs: number): string {
@@ -148,7 +155,9 @@ export async function GET(req: Request) {
     // spostava col minuto e l'elenco cambiava sotto le dita.
     const ancora = Math.floor(departEpoch / 3600) * 3600;
     const offsets: number[] = [];
-    for (let m = 0; m <= FINESTRA_MIN; m += PASSO_MIN) offsets.push(ancora - departEpoch + m * 60);
+    for (let m = -FINESTRA_INDIETRO_MIN; m <= FINESTRA_AVANTI_MIN; m += PASSO_MIN) {
+      offsets.push(ancora - departEpoch + m * 60);
+    }
     const risultati =
       access.length > 0 && egress.length > 0
         ? offsets
@@ -187,7 +196,7 @@ export async function GET(req: Request) {
             departAt: new Date(departEpoch * 1000).toISOString(),
             arriveAt: new Date((departEpoch + soloPiediS) * 1000).toISOString(),
             durationMin: camminata.minutes,
-            waitMin: 0,
+            esempio: false,
             walkMin: camminata.minutes,
             walkSeconds: soloPiediS,
             rides: 0,
@@ -309,11 +318,11 @@ export async function GET(req: Request) {
          */
         durationMin: Math.round((r.arriveAt - r.departAt) / 60),
         /**
-         * Quanto manca alla partenza. NON si azzera con un max(0): un campione
-         * ancorato all'ora tonda può partire prima dell'istante richiesto, e
-         * quell'istanza non è percorribile. Serve saperlo per scartarla.
+         * Gli orari sono di UNA corsa a titolo d'esempio, quella col viaggio
+         * più breve. Non sono "la" partenza: il percorso vale a prescindere,
+         * e per il prossimo passaggio c'è la pagina della fermata.
          */
-        waitMin: Math.round((r.departAt - (departEpoch - cs.baseEpoch)) / 60),
+        esempio: true,
         walkMin: Math.round(walkS / 60),
         walkSeconds: walkS,
         rides: corse.length,
@@ -334,29 +343,24 @@ export async function GET(req: Request) {
     // più tardi, con più cambi E più cammino di un altro non è una scelta, è
     // rumore. Restano solo quelle in cui si rinuncia a qualcosa per guadagnare
     // altro, che è ciò su cui vale la pena decidere.
-    // Per ogni percorso si tiene la PROSSIMA istanza percorribile: quella che
-    // parte per prima non prima dell'orario richiesto. La stessa combinazione
-    // di linee trovata campionando un'ora dopo non è un'opzione in più, è lo
-    // stesso percorso più tardi; e le istanze che partono prima della richiesta
-    // non sono percorribili e vanno scartate, non mostrate con attesa zero.
+    // Per ogni percorso si tiene l'istanza col VIAGGIO PIÙ BREVE, che è la
+    // caratteristica del percorso. Non la prossima corsa prendibile: che un
+    // singolo passaggio sia già andato non dice nulla su quanto sia buono il
+    // percorso, e filtrare su quello faceva cambiare l'elenco di minuto in
+    // minuto.
     const migliori = new Map<string, (typeof rese)[number]>();
     for (const o of rese) {
-      if (o.waitMin < 0) continue;
       const p = migliori.get(o.firma);
-      if (!p || o.waitMin < p.waitMin) migliori.set(o.firma, o);
+      if (!p || o.durationMin < p.durationMin) migliori.set(o.firma, o);
     }
     const uniche = [...migliori.values()];
     if (uniche.length === 0) {
       return NextResponse.json({ error: "nessun itinerario trovato", options: [] }, { status: 404 });
     }
-    // Due filtri di buon senso. Fuori dalla finestra significa che il servizio
-    // di quel percorso appartiene a un'altra fascia — i diurni chiesti di
-    // notte, i notturni chiesti di giorno — e non è una scelta disponibile.
-    // E un percorso che dura il doppio del migliore non è una scelta.
+    // Unico filtro: un percorso che dura il doppio del migliore non è una
+    // scelta. Nessun filtro sull'orario, per quanto detto sopra.
     const piuRapida = Math.min(...uniche.map((o) => o.durationMin));
-    const sensate = uniche.filter(
-      (o) => o.waitMin <= MAX_WAIT_MIN && o.durationMin <= piuRapida * 2 + 15,
-    );
+    const sensate = uniche.filter((o) => o.durationMin <= piuRapida * 2 + 15);
 
     const options = sensate
       .filter(
@@ -367,16 +371,14 @@ export async function GET(req: Request) {
               a.durationMin <= o.durationMin &&
               a.rides <= o.rides &&
               a.walkSeconds <= o.walkSeconds &&
-              a.waitMin <= o.waitMin &&
               (a.durationMin < o.durationMin ||
                 a.rides < o.rides ||
-                a.walkSeconds < o.walkSeconds ||
-                a.waitMin < o.waitMin),
+                a.walkSeconds < o.walkSeconds),
           ),
       )
-      // Si ordina per tempo di viaggio, che è il criterio di chi sceglie il
-      // percorso, non per ora di arrivo, che dipende da quando si esce.
-      .sort((a, b) => a.durationMin - b.durationMin || a.waitMin - b.waitMin)
+      // Si ordina per tempo di viaggio, che è il criterio di chi sceglie un
+      // percorso. L'orario di quella specifica corsa non c'entra.
+      .sort((a, b) => a.durationMin - b.durationMin || a.rides - b.rides)
       .slice(0, 5)
       // La firma serviva solo a deduplicare, non a chi legge.
       .map(({ firma, ...resto }) => resto);
