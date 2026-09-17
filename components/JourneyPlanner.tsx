@@ -24,7 +24,10 @@ type Leg =
 type Opzione = {
   departAt: string;
   arriveAt: string;
+  /** Da quando esci di casa a quando arrivi: non include l'attesa iniziale. */
   durationMin: number;
+  /** Quanto manca alla partenza. */
+  waitMin: number;
   walkMin: number;
   rides: number;
   lines: string[];
@@ -186,7 +189,8 @@ export default function JourneyPlanner() {
                           {o.durationMin} min
                         </span>
                         <span className="text-neutral-500">
-                          {" "}· {ora(o.departAt)}–{ora(o.arriveAt)}
+                          {" "}di viaggio
+                          {o.waitMin > 0 && ` · parti tra ${o.waitMin} min`}
                         </span>
                       </span>
                       <span className="mt-0.5 block truncate text-[13px] text-neutral-600">
@@ -205,8 +209,11 @@ export default function JourneyPlanner() {
             <p className="text-[19px] font-bold tabular-nums text-neutral-900">
               {ora(mostrata.departAt)} → {ora(mostrata.arriveAt)}
             </p>
-            <p className="text-[13px] text-neutral-600">
-              {mostrata.durationMin} min · {mostrata.walkMin} a piedi
+            <p className="text-right text-[13px] text-neutral-600">
+              {mostrata.durationMin} min di viaggio
+              <br />
+              {mostrata.walkMin} a piedi
+              {mostrata.waitMin > 0 && ` · parti tra ${mostrata.waitMin}`}
             </p>
           </div>
 

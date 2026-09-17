@@ -19,6 +19,13 @@ import { walkSeconds, MAX_WALK_ONLY_S, MAX_WALK_ALT_M } from "@/lib/plan/policy"
  */
 const ACCESS_TIGHT_M = 350;
 
+/**
+ * Attesa massima prima della partenza. Serve a scartare i percorsi la cui
+ * corsa utile è molto più tardi: con i tetti di cambi bassi la scansione ne
+ * trovava di formalmente ottimi che però partivano il giorno dopo.
+ */
+const MAX_WAIT_MIN = 90;
+
 /** Data locale romana dell'istante indicato: decide quali servizi caricare. */
 function romeDate(epochMs: number): string {
   return new Intl.DateTimeFormat("sv-SE", {
@@ -103,21 +110,28 @@ export async function GET(req: Request) {
       return v.length > 0 ? v : l.slice(0, 1);
     };
 
-    // Il fronte delle opzioni: una scansione per ogni tetto di cambi, più le
-    // varianti a raggio stretto. Non esiste un itinerario "giusto" — chi ha
-    // fretta, chi non vuole cambiare e chi non vuole camminare ne vogliono
-    // tre diversi — quindi si generano e si mostrano tutti, come fa Google
-    // Maps. Ogni scansione costa un paio di millisecondi.
+    // Il fronte delle opzioni. Non esiste un itinerario "giusto" — chi ha
+    // fretta, chi non vuole cambiare e chi non vuole camminare ne vogliono tre
+    // diversi — quindi si generano e si mostrano tutti, come fa Google Maps.
+    //
+    // Si scandisce per ogni tetto di cambi E da più orari di partenza. Gli
+    // orari servono perché un percorso ottimo può avere la corsa utile venti
+    // minuti dopo: cercando solo dall'istante richiesto resterebbe invisibile,
+    // pur essendo il migliore per chi non ha l'obbligo di partire adesso.
+    // Ogni scansione costa un paio di millisecondi.
+    const offsets = [0, 20 * 60, 45 * 60];
     const risultati =
       access.length > 0 && egress.length > 0
-        ? [
-            ...[1, 2, 3, 4].map((cap) =>
-              csaEarliestArrival(cs, fp, access, egress, departEpoch, cap),
-            ),
-            ...[1, 2, 3].map((cap) =>
-              csaEarliestArrival(cs, fp, stretto(access), stretto(egress), departEpoch, cap),
-            ),
-          ].filter((r): r is NonNullable<typeof r> => r !== null)
+        ? offsets
+            .flatMap((off) => [
+              ...[1, 2, 3, 4].map((cap) =>
+                csaEarliestArrival(cs, fp, access, egress, departEpoch + off, cap),
+              ),
+              ...[2, 3].map((cap) =>
+                csaEarliestArrival(cs, fp, stretto(access), stretto(egress), departEpoch + off, cap),
+              ),
+            ])
+            .filter((r): r is NonNullable<typeof r> => r !== null)
         : [];
 
     const res = risultati[0] ?? null;
@@ -144,6 +158,7 @@ export async function GET(req: Request) {
             departAt: new Date(departEpoch * 1000).toISOString(),
             arriveAt: new Date((departEpoch + soloPiediS) * 1000).toISOString(),
             durationMin: camminata.minutes,
+            waitMin: 0,
             walkMin: camminata.minutes,
             walkSeconds: soloPiediS,
             rides: 0,
@@ -252,22 +267,31 @@ export async function GET(req: Request) {
       });
 
       const corse = legs.filter((l) => l.kind === "ride");
+      const lines = corse.map((l) => (l.kind === "ride" ? l.shortName : ""));
       return {
         departAt: iso(r.departAt),
         arriveAt: iso(r.arriveAt),
-        durationMin: Math.round((r.arriveAt - (departEpoch - cs.baseEpoch)) / 60),
+        /**
+         * Tempo dal momento in cui esci di casa a quello in cui arrivi:
+         * cammino, viaggio e cambi, MA NON l'attesa iniziale. Quella non è una
+         * proprietà del percorso, dipende solo da quando ti trovi a uscire, e
+         * conteggiarla faceva sembrare scarso un itinerario ottimo solo perché
+         * l'autobus era appena passato.
+         */
+        durationMin: Math.round((r.arriveAt - r.departAt) / 60),
+        /** Quanto manca alla partenza: informazione utile, tenuta separata. */
+        waitMin: Math.max(0, Math.round((r.departAt - (departEpoch - cs.baseEpoch)) / 60)),
         walkMin: Math.round(walkS / 60),
         walkSeconds: walkS,
         rides: corse.length,
         /** Le linee in ordine: serve a riconoscere l'itinerario a colpo d'occhio. */
-        lines: corse.map((l) => (l.kind === "ride" ? l.shortName : "")),
+        lines,
         legs,
         // Firma per riconoscere due scansioni che hanno prodotto lo stesso
-        // itinerario: tetti di cambi diversi arrivano spesso alla stessa
-        // risposta.
-        firma: corse
-          .map((l) => (l.kind === "ride" ? `${l.shortName}@${l.from.stopId}>${l.to.stopId}@${l.departAt}` : ""))
-          .join("|"),
+        // PERCORSO. È la sequenza di linee e non gli orari: la stessa
+        // combinazione trovata partendo venti minuti dopo è lo stesso percorso,
+        // e va mostrata una volta sola.
+        firma: lines.join("|") || "piedi",
       };
     };
 
@@ -277,19 +301,29 @@ export async function GET(req: Request) {
     // più tardi, con più cambi E più cammino di un altro non è una scelta, è
     // rumore. Restano solo quelle in cui si rinuncia a qualcosa per guadagnare
     // altro, che è ciò su cui vale la pena decidere.
-    const viste = new Set<string>();
-    const uniche = rese.filter((o) => {
-      if (viste.has(o.firma)) return false;
-      viste.add(o.firma);
-      return true;
-    });
-    // Un'opzione che dura il doppio della migliore non è una scelta, è una
-    // trappola: con i tetti di cambi bassi la scansione trova itinerari
-    // formalmente non dominati — meno cambi, meno cammino — che però aspettano
-    // la corsa utile del giorno dopo. Misurato: da Via Apiro compariva una C5
-    // da 1454 minuti.
+    // Per ogni percorso si tiene l'istanza migliore: tempo di viaggio più
+    // breve e, a parità, attesa minore. La stessa combinazione di linee
+    // trovata partendo venti minuti dopo non è un'opzione in più.
+    const migliori = new Map<string, (typeof rese)[number]>();
+    for (const o of rese) {
+      const p = migliori.get(o.firma);
+      if (
+        !p ||
+        o.durationMin < p.durationMin ||
+        (o.durationMin === p.durationMin && o.waitMin < p.waitMin)
+      ) {
+        migliori.set(o.firma, o);
+      }
+    }
+    const uniche = [...migliori.values()];
+    // Due filtri di buon senso. Un'attesa enorme significa che la corsa utile
+    // di quel percorso è il giorno dopo: con i tetti di cambi bassi la
+    // scansione le trovava, formalmente non dominate perché senza cambi.
+    // E un percorso che dura il doppio del migliore non è una scelta.
     const piuRapida = Math.min(...uniche.map((o) => o.durationMin));
-    const sensate = uniche.filter((o) => o.durationMin <= piuRapida * 2 + 15);
+    const sensate = uniche.filter(
+      (o) => o.waitMin <= MAX_WAIT_MIN && o.durationMin <= piuRapida * 2 + 15,
+    );
 
     const options = sensate
       .filter(
@@ -297,13 +331,19 @@ export async function GET(req: Request) {
           !sensate.some(
             (a) =>
               a !== o &&
-              a.arriveAt <= o.arriveAt &&
+              a.durationMin <= o.durationMin &&
               a.rides <= o.rides &&
               a.walkSeconds <= o.walkSeconds &&
-              (a.arriveAt < o.arriveAt || a.rides < o.rides || a.walkSeconds < o.walkSeconds),
+              a.waitMin <= o.waitMin &&
+              (a.durationMin < o.durationMin ||
+                a.rides < o.rides ||
+                a.walkSeconds < o.walkSeconds ||
+                a.waitMin < o.waitMin),
           ),
       )
-      .sort((a, b) => a.arriveAt.localeCompare(b.arriveAt) || a.rides - b.rides)
+      // Si ordina per tempo di viaggio, che è il criterio di chi sceglie il
+      // percorso, non per ora di arrivo, che dipende da quando si esce.
+      .sort((a, b) => a.durationMin - b.durationMin || a.waitMin - b.waitMin)
       .slice(0, 5)
       // La firma serviva solo a deduplicare, non a chi legge.
       .map(({ firma, ...resto }) => resto);
