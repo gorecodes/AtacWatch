@@ -110,7 +110,7 @@ export default function TripDetail({ tripId }: { tripId: string }) {
 
       {loaded && error && stops.length === 0 && (
         <p className="px-4 py-6 text-sm text-neutral-500">
-          Impossibile caricare la corsa.{" "}
+          La corsa non si lascia caricare.{" "}
           <button onClick={load} className="text-brand-600 underline">Riprova</button>.
         </p>
       )}

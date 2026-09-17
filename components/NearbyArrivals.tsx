@@ -158,19 +158,25 @@ export default function NearbyArrivals() {
       </div>
 
       {state.kind === "idle" && (
+        // Deve leggersi come un'AZIONE, non come un titolo: prima era "Che
+        // passa qui intorno", che sembrava l'intestazione di una sezione vuota.
+        // E il sottotitolo diceva "La uso sul momento" senza dire cosa: avevo
+        // accorciato il testo togliendo "la posizione", cioè il soggetto della
+        // frase. La freccia è la stessa delle altre righe toccabili.
         <button
           onClick={() => locate()}
           className="flex w-full items-center gap-2.5 border-y border-neutral-200 py-3 text-left active:bg-neutral-200/40"
         >
           <PinGlyph className="h-5 w-5 shrink-0 text-brand-500" />
-          <span>
+          <span className="min-w-0 flex-1">
             <span className="block text-[15px] font-medium text-neutral-900">
-              Che passa qui intorno
+              Vedi cosa passa qui intorno
             </span>
             <span className="block text-[13px] text-neutral-500">
-              La uso sul momento e non la salvo
+              Tocca per condividere la posizione: la guardo sul momento e non la salvo
             </span>
           </span>
+          <span className="shrink-0 text-neutral-300">›</span>
         </button>
       )}
 
@@ -182,7 +188,7 @@ export default function NearbyArrivals() {
 
       {state.kind === "denied" && (
         <p className="py-3 text-[14px] text-neutral-500">
-          Non ho il permesso di usare la posizione. Abilitalo nelle impostazioni del browser, poi{" "}
+          Senza il permesso di posizione non so dove sei. Abilitalo nelle impostazioni del browser, poi{" "}
           <button onClick={() => locate()} className="font-medium text-brand-600 underline underline-offset-2">riprova</button>
           . Oppure cerca la fermata per nome qui sopra.
         </p>

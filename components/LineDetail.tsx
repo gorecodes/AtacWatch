@@ -291,7 +291,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
             departures === null ? (
               <p className="text-xs text-neutral-500">Carico gli orari…</p>
             ) : departures.length === 0 ? (
-              <p className="text-xs text-neutral-500">Nessuna partenza nelle prossime 2 ore.</p>
+              <p className="text-xs text-neutral-500">Nelle prossime 2 ore, niente.</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {departures.slice(0, 8).map((d, i) => (
@@ -333,7 +333,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
               </div>
               {loadingTimetable && <p className="text-xs text-neutral-500">Carico l&apos;orario…</p>}
               {timetable && timetable.length === 0 && (
-                <p className="text-xs text-neutral-500">Nessuna corsa programmata.</p>
+                <p className="text-xs text-neutral-500">Oggi niente. Giornata libera.</p>
               )}
               {timetable && timetable.length > 0 && (() => {
                 const nowSecs = timetableDate === 0 ? romeSecsFromMidnight(now) : -1;
@@ -401,7 +401,7 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
                     <p className="py-1 text-[13px] text-neutral-500">Leggo gli orari…</p>
                   )}
                   {stopTimes && stopTimes.length === 0 && (
-                    <p className="py-1 text-[13px] text-neutral-500">Nessun passaggio nelle prossime 2 ore.</p>
+                    <p className="py-1 text-[13px] text-neutral-500">Nelle prossime 2 ore, niente.</p>
                   )}
                   {stopTimes && stopTimes.length > 0 && (
                     <ul className="space-y-1">
