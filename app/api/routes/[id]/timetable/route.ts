@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSql } from "@/lib/db";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,21 +11,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!stopId) return NextResponse.json({ error: "param stop mancante" }, { status: 400 });
   if (dirParam === null) return NextResponse.json({ error: "param dir mancante" }, { status: 400 });
 
-  const rpcParams: Record<string, unknown> = {
-    p_route_id: id,
-    p_stop_id: stopId,
-    p_direction_id: Number(dirParam),
-  };
-  if (dateParam) rpcParams.p_date = dateParam;
+  const dir = Number(dirParam);
+  // p_date è opzionale: null fa usare alla funzione la data corrente
+  const date: string | null = dateParam ?? null;
 
-  const { data, error } = await getSupabase().rpc("line_full_timetable", rpcParams);
-  if (error) {
-    console.error("[routes/:id/timetable]", error);
+  try {
+    const sql = getSql();
+    const rows = await sql`SELECT * FROM line_full_timetable(${id}, ${stopId}, ${dir}, ${date})`;
+    return NextResponse.json(
+      { timetable: rows },
+      { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } },
+    );
+  } catch (e) {
+    console.error("[routes/:id/timetable]", e);
     return NextResponse.json({ error: "errore interno" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { timetable: data ?? [] },
-    { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } },
-  );
 }

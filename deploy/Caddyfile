@@ -1,0 +1,10 @@
+# Cloudflare gestisce TLS verso gli utenti (proxy arancione).
+# Caddy serve HTTP puro sulla porta 80: Cloudflare fa da frontend HTTPS.
+#
+# Nel dashboard Cloudflare:
+#   SSL/TLS → Overview → modalità "Full"
+#   (Full = cifra il tratto Cloudflare→VPS anche con cert auto-firmato;
+#    NON usare "Flexible" che lascia il tratto verso il VPS in chiaro)
+:80 {
+	reverse_proxy app:3000
+}

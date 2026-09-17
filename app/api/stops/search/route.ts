@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSql } from "@/lib/db";
 
-// Ricerca fermate per numero (codice palina) o nome
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
-  if (q.length < 1) return NextResponse.json({ stops: [] });
+  if (q.length < 2) return NextResponse.json({ stops: [] });
 
-  const { data, error } = await getSupabase().rpc("search_stops", { q });
-  if (error) {
-    console.error("[stops/search]", error);
+  try {
+    const sql = getSql();
+    const rows = await sql`SELECT * FROM search_stops(${q})`;
+    return NextResponse.json(
+      { stops: rows },
+      { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } },
+    );
+  } catch (e) {
+    console.error("[stops/search]", e);
     return NextResponse.json({ error: "errore interno" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { stops: data ?? [] },
-    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
-  );
 }

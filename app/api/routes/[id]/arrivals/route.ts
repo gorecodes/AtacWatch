@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSql } from "@/lib/db";
 
 // Prossimi passaggi di questa linea a una fermata (param ?stop=)
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -7,16 +7,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const stopId = new URL(req.url).searchParams.get("stop");
   if (!stopId) return NextResponse.json({ error: "param stop mancante" }, { status: 400 });
 
-  const { data, error } = await getSupabase().rpc("route_stop_arrivals", {
-    p_route_id: id, p_stop_id: stopId,
-  });
-  if (error) {
-    console.error("[routes/:id/arrivals]", error);
+  try {
+    const sql = getSql();
+    const rows = await sql`SELECT * FROM route_stop_arrivals(${id}, ${stopId})`;
+    return NextResponse.json(
+      { arrivals: rows },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (e) {
+    console.error("[routes/:id/arrivals]", e);
     return NextResponse.json({ error: "errore interno" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { arrivals: data ?? [] },
-    { headers: { "Cache-Control": "no-store" } },
-  );
 }

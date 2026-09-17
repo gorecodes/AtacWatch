@@ -1,0 +1,88 @@
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atacwatch
+      POSTGRES_USER: atacwatch
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD richiesta}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atacwatch -d atacwatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    networks:
+      - internal
+    # Porta NON esposta all'esterno: accessibile solo nella rete Docker interna.
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    # NOTA: fase 2 richiesta — supabase-js deve essere sostituito con postgres.js
+    #       prima che l'app possa avviarsi correttamente.
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    # NOTA: fase 3 richiesta — worker/index.ts deve essere creato.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # 443 non esposta: TLS è gestito da Cloudflare, non da Caddy.
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - internal
+
+  # Servizio usa-e-getta per applicare le migrations.
+  # Uso: docker compose run --rm migrate
+  migrate:
+    image: postgis/postgis:17-3.5
+    environment:
+      DATABASE_URL: postgres://atacwatch:${DB_PASSWORD}@db:5432/atacwatch
+    volumes:
+      - ./supabase/migrations:/migrations:ro
+      - ./scripts/migrate.sh:/migrate.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles: ["tools"]
+    entrypoint: ["bash", "/migrate.sh"]
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge

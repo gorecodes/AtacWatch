@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSql } from "@/lib/db";
 
 // Cache in-memory: evita chiamate DB ripetute dallo stesso utente nel polling.
 // Chiave: lat/lon arrotondati a 3 decimali (~100m) + raggio. TTL: 25 secondi.
@@ -29,31 +29,26 @@ export async function GET(req: Request) {
     );
   }
 
-  const { data, error } = await getSupabase().rpc("nearby_arrivals", {
-    p_lat: lat,
-    p_lon: lon,
-    p_radius_m: radius,
-    p_horizon_min: 25,
-  });
+  try {
+    const sql = getSql();
+    const arrivals = await sql`SELECT * FROM nearby_arrivals(${lat}, ${lon}, ${radius}, ${25})`;
 
-  if (error) {
-    console.error("[nearby/arrivals]", error);
+    cache.set(key, { arrivals, ts: Date.now() });
+
+    // Pulizia voci scadute per non far crescere la Map indefinitamente
+    if (cache.size > 200) {
+      const cutoff = Date.now() - CACHE_TTL;
+      for (const [k, v] of cache) {
+        if (v.ts < cutoff) cache.delete(k);
+      }
+    }
+
+    return NextResponse.json(
+      { arrivals },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (e) {
+    console.error("[nearby/arrivals]", e);
     return NextResponse.json({ error: "errore interno" }, { status: 500 });
   }
-
-  const arrivals = data ?? [];
-  cache.set(key, { arrivals, ts: Date.now() });
-
-  // Pulizia voci scadute per non far crescere la Map indefinitamente
-  if (cache.size > 200) {
-    const cutoff = Date.now() - CACHE_TTL;
-    for (const [k, v] of cache) {
-      if (v.ts < cutoff) cache.delete(k);
-    }
-  }
-
-  return NextResponse.json(
-    { arrivals },
-    { headers: { "Cache-Control": "no-store" } },
-  );
 }

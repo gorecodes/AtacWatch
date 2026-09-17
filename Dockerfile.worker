@@ -1,0 +1,24 @@
+# ---- Stage 1: dipendenze ----
+FROM node:22-alpine AS deps
+RUN corepack enable pnpm
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Installa anche le devDependencies (tsx, gtfs-realtime-bindings, ecc.)
+RUN pnpm install --frozen-lockfile
+
+# ---- Stage 2: runtime ----
+FROM node:22-alpine AS runner
+RUN corepack enable pnpm
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+# Sorgenti del worker e librerie condivise
+COPY worker/ ./worker/
+COPY lib/ ./lib/
+COPY scripts/ ./scripts/
+COPY tsconfig.json ./
+COPY package.json ./
+
+# tsx esegue TypeScript direttamente senza compilazione esplicita
+CMD ["node_modules/.bin/tsx", "worker/index.ts"]
