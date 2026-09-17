@@ -38,8 +38,14 @@ function ora(iso: string): string {
   });
 }
 
-function params(from: Endpoint, to: Endpoint): string {
+function params(from: Endpoint, to: Endpoint, quando: string): string {
   const p = new URLSearchParams();
+  // Il valore di datetime-local è nell'ora locale del telefono, che per chi
+  // usa quest'app è quella di Roma: convertirlo in ISO basta.
+  if (quando) {
+    const t = new Date(quando);
+    if (!Number.isNaN(t.getTime())) p.set("at", t.toISOString());
+  }
   if (from.kind === "stop") p.set("fromStopId", from.stopId);
   else {
     p.set("fromLat", String(from.lat));
@@ -58,13 +64,15 @@ export default function JourneyPlanner() {
   const [to, setTo] = useState<Endpoint | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "empty" | "error">("idle");
+  /** Vuoto = parto adesso. */
+  const [quando, setQuando] = useState("");
 
   async function cerca() {
     if (!from || !to) return;
     setState("loading");
     setPlan(null);
     try {
-      const res = await fetch(`/api/plan?${params(from, to)}`, { cache: "no-store" });
+      const res = await fetch(`/api/plan?${params(from, to, quando)}`, { cache: "no-store" });
       if (res.status === 404) {
         setState("empty");
         return;
@@ -81,6 +89,45 @@ export default function JourneyPlanner() {
     <div>
       <PlanEndpoint label="Da" value={from} onChange={setFrom} allowGps />
       <PlanEndpoint label="A" value={to} onChange={setTo} allowGps={false} />
+
+      {/* L'orario conta: una linea che a quell'ora non passa non viene
+          proposta, quindi pianificare per dopo dà risultati diversi. */}
+      <div className="flex items-center gap-2 border-b border-neutral-300 py-2.5">
+        <span className="w-[68px] shrink-0 text-[12px] uppercase tracking-wide text-neutral-500">
+          Parti
+        </span>
+        {quando === "" ? (
+          <>
+            <span className="flex-1 text-[15px] text-neutral-900">Adesso</span>
+            <button
+              onClick={() => {
+                // Precompilo con l'ora attuale arrotondata: un campo vuoto
+                // costringerebbe a digitare tutto da zero.
+                const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
+                setQuando(d.toISOString().slice(0, 16));
+              }}
+              className="shrink-0 text-[13px] text-neutral-600 underline underline-offset-2 active:text-neutral-900"
+            >
+              Scegli l&apos;ora
+            </button>
+          </>
+        ) : (
+          <>
+            <input
+              type="datetime-local"
+              value={quando}
+              onChange={(e) => setQuando(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-[15px] text-neutral-900 focus:outline-none"
+            />
+            <button
+              onClick={() => setQuando("")}
+              className="shrink-0 text-[13px] text-neutral-600 underline underline-offset-2 active:text-neutral-900"
+            >
+              Adesso
+            </button>
+          </>
+        )}
+      </div>
 
       <button
         onClick={cerca}
