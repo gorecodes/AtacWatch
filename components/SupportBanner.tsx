@@ -3,34 +3,17 @@
 import { useEffect, useState } from "react";
 import { CloseGlyph } from "./Glyphs";
 
-/**
- * Chiede un contributo solo a chi usa l'app da un po': il footer globale non lo
- * legge nessuno, ma un banner al primo avvio sarebbe mendicare prima di aver
- * dato qualcosa. Compare dalla decima apertura (una o due settimane di uso
- * quotidiano) e una volta chiuso non torna più.
- */
-const OPENS_KEY = "busroma_opens";
+/** Visibile sempre, finché non viene chiuso: allora non torna più. */
 const DISMISSED_KEY = "busroma_support_dismissed";
-const SESSION_KEY = "busroma_counted";
-const MIN_OPENS = 10;
 
 export default function SupportBanner() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(DISMISSED_KEY)) return;
-
-      // Una apertura = una sessione, non una navigazione fra pagine.
-      let opens = Number(localStorage.getItem(OPENS_KEY) ?? "0");
-      if (!sessionStorage.getItem(SESSION_KEY)) {
-        opens += 1;
-        localStorage.setItem(OPENS_KEY, String(opens));
-        sessionStorage.setItem(SESSION_KEY, "1");
-      }
-      if (opens >= MIN_OPENS) setShow(true);
+      if (!localStorage.getItem(DISMISSED_KEY)) setShow(true);
     } catch {
-      // localStorage non disponibile (navigazione privata): nessun banner
+      setShow(true); // navigazione privata: mostralo comunque
     }
   }, []);
 
