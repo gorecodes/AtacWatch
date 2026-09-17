@@ -1,19 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { StopResult } from "@/lib/gtfs";
-import { SearchGlyph, StopGlyph, PinGlyph, CloseGlyph } from "./Glyphs";
+import { SearchGlyph, StopGlyph, PinGlyph, CloseGlyph, RouteGlyph } from "./Glyphs";
 
 /**
- * Un capo del viaggio: la posizione attuale oppure una fermata cercata.
+ * Un capo del viaggio: la posizione attuale, una fermata, o un indirizzo.
  *
- * Non si può digitare un indirizzo perché non abbiamo un geocoder: il feed
- * GTFS conosce le fermate, non le vie. È il limite principale di questa
- * versione del calcolo percorsi.
+ * La ricerca interroga /api/geocode, che unisce le fermate del GTFS e i luoghi
+ * di OpenStreetMap: per chi cerca sono la stessa cosa, "dove voglio andare".
  */
 export type Endpoint =
   | { kind: "gps"; lat: number; lon: number }
-  | { kind: "stop"; stopId: string; name: string };
+  | { kind: "stop"; stopId: string; name: string }
+  | { kind: "place"; lat: number; lon: number; name: string };
+
+type Risultato = {
+  kind: "stop" | "street" | "address" | "poi";
+  id: string;
+  label: string;
+  detail: string | null;
+  stopId: string | null;
+  lat: number | null;
+  lon: number | null;
+};
 
 export default function PlanEndpoint({
   label,
@@ -27,22 +36,22 @@ export default function PlanEndpoint({
   allowGps: boolean;
 }) {
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<StopResult[]>([]);
+  const [results, setResults] = useState<Risultato[]>([]);
   const [open, setOpen] = useState(false);
   const [gpsState, setGpsState] = useState<"idle" | "locating" | "denied">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
-    if (q.trim().length < 2) {
+    if (q.trim().length < 3) {
       setResults([]);
       return;
     }
     timer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/stops/search?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
         const json = await res.json();
-        setResults((json.stops ?? []).slice(0, 6));
+        setResults((json.results ?? []).slice(0, 8));
       } catch {
         setResults([]);
       }
@@ -72,8 +81,10 @@ export default function PlanEndpoint({
         <span className="w-[68px] shrink-0 text-[12px] uppercase tracking-wide text-neutral-500">{label}</span>
         {value.kind === "gps" ? (
           <PinGlyph className="h-4 w-4 shrink-0 text-brand-500" />
-        ) : (
+        ) : value.kind === "stop" ? (
           <StopGlyph className="h-4 w-4 shrink-0 text-neutral-500" />
+        ) : (
+          <RouteGlyph className="h-4 w-4 shrink-0 text-neutral-500" />
         )}
         <span className="name min-w-0 flex-1 truncate text-[15px] text-neutral-900">
           {value.kind === "gps" ? "La mia posizione" : value.name}
@@ -105,7 +116,7 @@ export default function PlanEndpoint({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          placeholder="Cerca una fermata"
+          placeholder="Via, fermata o luogo"
           className="min-w-0 flex-1 bg-transparent py-1 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
         />
       </div>
@@ -122,19 +133,31 @@ export default function PlanEndpoint({
 
       {results.length > 0 && (
         <ul className="mt-1 divide-y divide-neutral-200">
-          {results.map((s) => (
-            <li key={s.stop_id}>
+          {results.map((r) => (
+            <li key={r.id}>
               <button
                 onClick={() => {
-                  onChange({ kind: "stop", stopId: s.stop_id, name: s.name });
+                  if (r.kind === "stop" && r.stopId) {
+                    onChange({ kind: "stop", stopId: r.stopId, name: r.label });
+                  } else if (r.lat != null && r.lon != null) {
+                    onChange({ kind: "place", lat: r.lat, lon: r.lon, name: r.label });
+                  }
                   setOpen(false);
                   setQ("");
                 }}
                 className="flex w-full items-center gap-2 py-2 text-left active:bg-neutral-200/40"
               >
-                <StopGlyph className="h-4 w-4 shrink-0 text-neutral-400" />
-                <span className="name min-w-0 flex-1 truncate text-[14px] text-neutral-900">{s.name}</span>
-                {s.code && <span className="shrink-0 text-[12px] tabular-nums text-neutral-400">{s.code}</span>}
+                {r.kind === "stop" ? (
+                  <StopGlyph className="h-4 w-4 shrink-0 text-neutral-400" />
+                ) : (
+                  <RouteGlyph className="h-4 w-4 shrink-0 text-neutral-400" />
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="name block truncate text-[14px] text-neutral-900">{r.label}</span>
+                  {r.detail && (
+                    <span className="name block truncate text-[12px] text-neutral-500">{r.detail}</span>
+                  )}
+                </span>
               </button>
             </li>
           ))}

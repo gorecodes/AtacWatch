@@ -40,17 +40,15 @@ function ora(iso: string): string {
 
 function params(from: Endpoint, to: Endpoint): string {
   const p = new URLSearchParams();
-  if (from.kind === "gps") {
+  if (from.kind === "stop") p.set("fromStopId", from.stopId);
+  else {
     p.set("fromLat", String(from.lat));
     p.set("fromLon", String(from.lon));
-  } else {
-    p.set("fromStopId", from.stopId);
   }
-  if (to.kind === "gps") {
+  if (to.kind === "stop") p.set("toStopId", to.stopId);
+  else {
     p.set("toLat", String(to.lat));
     p.set("toLon", String(to.lon));
-  } else {
-    p.set("toStopId", to.stopId);
   }
   return p.toString();
 }

@@ -20,7 +20,7 @@ export default function PlanPage() {
 
       <h1 className="mb-1 text-[22px] font-bold tracking-tight text-neutral-900">Percorsi</h1>
       <p className="mb-4 text-[13px] text-neutral-600">
-        Da fermata a fermata, o dalla tua posizione. Gli indirizzi non sono ancora cercabili.
+        Da via a via, da fermata a fermata, o dalla tua posizione.
       </p>
 
       <JourneyPlanner />
