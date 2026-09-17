@@ -1,0 +1,12 @@
+[Unit]
+Description=AtacWatch — ETL GTFS statico (giornaliero alle 4:00)
+Requires=atacwatch-ingest.service
+
+[Timer]
+# Ogni giorno alle 4:00 ora locale del server.
+OnCalendar=*-*-* 04:00:00
+# Se il server era spento all'orario schedulato, esegui appena si riavvia.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

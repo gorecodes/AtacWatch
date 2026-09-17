@@ -1,0 +1,4 @@
+# Sostituisci con il tuo dominio. Caddy ottiene il certificato TLS automaticamente via ACME.
+{$DOMAIN} {
+	reverse_proxy app:3000
+}
