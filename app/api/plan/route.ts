@@ -19,6 +19,14 @@ function romeDate(epochMs: number): string {
   }).format(new Date(epochMs));
 }
 
+async function stopCoords(stopId: string): Promise<[number, number] | null> {
+  const r = await getSql()<{ lat: number; lon: number }[]>`
+    SELECT st_y(geom)::float8 AS lat, st_x(geom)::float8 AS lon
+    FROM stops WHERE stop_id = ${stopId}
+  `;
+  return r[0] ? [r[0].lat, r[0].lon] : null;
+}
+
 function num(v: string | null): number | null {
   if (v === null || v.trim() === "") return null;
   const n = Number(v);
@@ -28,12 +36,30 @@ function num(v: string | null): number | null {
 export async function GET(req: Request) {
   const p = new URL(req.url).searchParams;
 
-  const fromLat = num(p.get("fromLat"));
-  const fromLon = num(p.get("fromLon"));
-  const toLat = num(p.get("toLat"));
-  const toLon = num(p.get("toLon"));
+  // I due capi si possono dare come coordinate (posizione attuale) o come
+  // fermata scelta dalla ricerca, che non restituisce le coordinate.
+  let fromLat = num(p.get("fromLat"));
+  let fromLon = num(p.get("fromLon"));
+  let toLat = num(p.get("toLat"));
+  let toLon = num(p.get("toLon"));
+
+  const fromStopId = p.get("fromStopId");
+  const toStopId = p.get("toStopId");
+
+  if ((fromLat === null || fromLon === null) && fromStopId) {
+    const c = await stopCoords(fromStopId);
+    if (c) [fromLat, fromLon] = c;
+  }
+  if ((toLat === null || toLon === null) && toStopId) {
+    const c = await stopCoords(toStopId);
+    if (c) [toLat, toLon] = c;
+  }
+
   if (fromLat === null || fromLon === null || toLat === null || toLon === null) {
-    return NextResponse.json({ error: "fromLat, fromLon, toLat, toLon obbligatori" }, { status: 400 });
+    return NextResponse.json(
+      { error: "serve un punto di partenza e uno di arrivo (coordinate o id fermata)" },
+      { status: 400 },
+    );
   }
 
   const atRaw = p.get("at");

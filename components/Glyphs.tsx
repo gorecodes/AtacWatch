@@ -107,6 +107,22 @@ export function LiveDot({ className = "" }: GlyphProps) {
   );
 }
 
+/** Un percorso: due capi e una linea spezzata che li unisce. */
+export function RouteGlyph({ className = "" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
+      <circle cx="4.5" cy="15.5" r="2.2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="15.5" cy="4.5" r="2.2" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M4.5 13V9.5A2.5 2.5 0 0 1 7 7h6a2.5 2.5 0 0 0 2.5-2.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function CloseGlyph({ className = "" }: GlyphProps) {
   return (
     <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
