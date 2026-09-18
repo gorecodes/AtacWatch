@@ -230,8 +230,17 @@ export async function GET(req: Request) {
     }
 
     const [stopRows, tripRows] = await Promise.all([
-      sql<{ stop_id: string; name: string; code: string | null }[]>`
-        SELECT stop_id, name, code FROM stops WHERE stop_id = ANY(${[...stopIds]})
+      // Le coordinate servono a disegnare l'itinerario su una mappa. Sono
+      // qui e non in un endpoint a parte perché non esiste un modo di
+      // tradurre un identificativo di fermata in coordinate: /api/stops/search
+      // non le espone e /api/stops/:id/arrivals nemmeno. Il client altrimenti
+      // deve indovinarle dal percorso della linea, che sulle corse variante
+      // non combacia.
+      sql<{ stop_id: string; name: string; code: string | null; lat: number; lon: number }[]>`
+        SELECT stop_id, name, code,
+               st_y(geom)::float8 AS lat,
+               st_x(geom)::float8 AS lon
+        FROM stops WHERE stop_id = ANY(${[...stopIds]})
       `,
       tripIds.size > 0
         ? sql<{ trip_id: string; short_name: string; color: string | null; text_color: string | null; headsign: string | null }[]>`
@@ -249,7 +258,15 @@ export async function GET(req: Request) {
     const fermata = (idx: number) => {
       const id = cs.stopIds[idx];
       const s = stopById.get(id);
-      return { stopId: id, name: s?.name ?? id, code: s?.code ?? null };
+      return {
+        stopId: id,
+        name: s?.name ?? id,
+        code: s?.code ?? null,
+        // Nulle solo se la fermata non è nella tabella, che non dovrebbe
+        // succedere: il router le ha prese da lì.
+        lat: s?.lat ?? null,
+        lon: s?.lon ?? null,
+      };
     };
 
     const rendi = (r: NonNullable<typeof res>) => {

@@ -1,6 +1,13 @@
 /** Tipi dell'itinerario restituito da /api/plan, condivisi tra pianificatore e dettaglio. */
 
-export type FermataItinerario = { stopId: string; name: string; code: string | null };
+export type FermataItinerario = {
+  stopId: string;
+  name: string;
+  code: string | null;
+  /** Per disegnare l'itinerario su una mappa. Nulle se la fermata non si trova. */
+  lat: number | null;
+  lon: number | null;
+};
 
 export type TrattaItinerario =
   | {
