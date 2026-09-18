@@ -216,5 +216,48 @@ export default function RouteMap({
     if (src) src.setData(vehicleData(vehicles));
   }, [vehicles]);
 
+  // Popup fermata al tap/click: nome e link agli arrivi.
+  // Agganciato una volta sola quando la mappa è pronta — il layer "route-stops"
+  // viene creato in quell'istante e non cambia ID al ricaricamento dei dati.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+
+    let popup: maplibregl.Popup | null = null;
+
+    const onClick = (e: maplibregl.MapLayerMouseEvent) => {
+      const feat = e.features?.[0];
+      if (!feat) return;
+      const { name, id } = feat.properties as { name: string; id: string };
+      const [lon, lat] = (feat.geometry as GeoJSON.Point).coordinates as [number, number];
+
+      popup?.remove();
+      popup = new maplibregl.Popup({ closeButton: true, maxWidth: "220px", offset: 8 })
+        .setLngLat([lon, lat])
+        .setHTML(
+          `<div style="font-family:inherit;line-height:1.3">` +
+          `<div style="font-weight:700;font-size:14px;margin-bottom:4px">${name}</div>` +
+          `<a href="/stop/${id}" style="font-size:12px;color:#1D4ED8;text-decoration:underline">` +
+          `Vedi arrivi →</a></div>`,
+        )
+        .addTo(map);
+    };
+
+    // Cursore pointer su desktop: fa capire che la fermata è cliccabile.
+    const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
+    const onLeave = () => { map.getCanvas().style.cursor = ""; };
+
+    map.on("click", "route-stops", onClick);
+    map.on("mouseenter", "route-stops", onEnter);
+    map.on("mouseleave", "route-stops", onLeave);
+
+    return () => {
+      map.off("click", "route-stops", onClick);
+      map.off("mouseenter", "route-stops", onEnter);
+      map.off("mouseleave", "route-stops", onLeave);
+      popup?.remove();
+    };
+  }, [ready]);
+
   return <div ref={containerRef} className="h-full w-full" />;
 }

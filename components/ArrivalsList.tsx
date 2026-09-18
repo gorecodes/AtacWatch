@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import type { Arrival } from "@/lib/gtfs";
+import { minutesUntil } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import { useFavorites } from "@/lib/favorites";
 import RouteBadge from "./RouteBadge";
@@ -120,6 +121,12 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
             : a.direction_id != null
               ? `/line/${encodeURIComponent(a.route_id)}?dir=${a.direction_id}`
               : `/line/${encodeURIComponent(a.route_id)}`;
+          // La campanella non serve se il bus arriva in meno di 3 minuti:
+          // sotto quella soglia non c'è tempo materiale per ricevere la notifica
+          // e muoversi verso la fermata. La finestra del worker è 5 minuti,
+          // quindi 3 min da qui dà comunque un tick di margine.
+          const minsLeft = minutesUntil(a.eta_ts, now);
+          const bellUtile = a.trip_id != null && minsLeft >= 3;
           return (
             <li key={`${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`} className="flex items-center">
               <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
@@ -132,10 +139,10 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                 <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
               </Link>
 
-              {a.trip_id && (
+              {bellUtile && (
                 <BellButton
                   stopId={stopId}
-                  tripId={a.trip_id}
+                  tripId={a.trip_id!}
                   routeShortName={a.short_name}
                   headsign={a.headsign ?? null}
                 />

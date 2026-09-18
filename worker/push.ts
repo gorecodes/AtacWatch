@@ -2,8 +2,14 @@
  * Delivery delle push notification.
  *
  * Chiamato dopo ogni tick RT: cerca le subscription il cui bus sta arrivando
- * (eta entro i prossimi 3 minuti o già passata da meno di 1 minuto),
+ * (eta entro i prossimi 5 minuti o già passata da meno di 1 minuto),
  * invia la notifica via Web Push e cancella la riga dal DB.
+ *
+ * Perché 5 minuti e non 3: il worker gira ogni 60 secondi. Con 3 minuti, un
+ * bus a 3:30 dal pick-up salta il tick corrente e la notifica arriva al giro
+ * dopo, quando il bus è a 2:30. Con 5 minuti il buffer copre il ciclo del
+ * worker più il ritardo di consegna del push, e l'utente ha ancora 4 minuti
+ * per muoversi.
  *
  * Le subscription stantie (create più di 2 ore fa, bus mai arrivato o
  * corsa cancellata) vengono ripulite anch'esse a ogni tick.
@@ -49,7 +55,7 @@ export async function deliverPushNotifications(sql: postgres.Sql): Promise<numbe
       ON tu.trip_id = ps.trip_id
      AND tu.stop_id  = ps.stop_id
     WHERE tu.arrival_ts BETWEEN now() - interval '1 minute'
-                            AND now() + interval '3 minutes'
+                            AND now() + interval '5 minutes'
   `;
 
   let sent = 0;
