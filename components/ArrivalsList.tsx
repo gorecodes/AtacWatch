@@ -8,7 +8,7 @@ import { usePolling, useNow } from "@/lib/usePolling";
 import { useFavorites } from "@/lib/favorites";
 import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
-import { StarGlyph, LiveBeacon } from "./Glyphs";
+import { StarGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
 import BellButton from "./BellButton";
 import ThemeToggle from "./ThemeToggle";
@@ -22,7 +22,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
   const [arrivals, setArrivals] = useState<Arrival[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const { isFavorite, toggle } = useFavorites();
   const now = useNow(15000);
 
@@ -33,7 +32,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
       const json = await res.json();
       setStop(json.stop ?? null);
       setArrivals(json.arrivals ?? []);
-      setUpdatedAt(new Date());
       setError(false);
     } catch {
       setError(true);
@@ -58,11 +56,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           <BackButton />
 
           <div className="flex items-center gap-3">
-            {/* Il LiveBeacon segnala che la pagina si aggiorna: l'orario esatto
-                dell'ultimo aggiornamento del feed ATAC è nella striscia globale
-                sopra la navigazione (FeedStatus), che è più accurato del
-                timestamp del browser. */}
-            {updatedAt && !error && <LiveBeacon />}
             {stop && (
               <button
                 onClick={() => toggle({ stop_id: stopId, name: stop.name, code: stop.code ?? null })}
