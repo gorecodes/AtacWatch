@@ -4,7 +4,6 @@ import NearbyArrivals from "@/components/NearbyArrivals";
 import FavoriteStops from "@/components/FavoriteStops";
 import SupportBanner from "@/components/SupportBanner";
 import HeaderActions from "@/components/HeaderActions";
-import AvvisiHome from "@/components/AvvisiHome";
 
 export default function HomePage() {
   return (
@@ -27,15 +26,6 @@ export default function HomePage() {
       <Benvenuto />
 
       <SearchBar />
-
-      {/* Gli avvisi di oggi subito sotto la ricerca, in una riga sola: se una
-          linea è deviata per una manifestazione, saperlo prima di cercare la
-          fermata cambia quello che si cerca. La riga non c'è quando non ci
-          sono avvisi urgenti, che è il modo di dire "oggi niente" senza
-          occupare spazio. */}
-      <div className="mt-2">
-        <AvvisiHome />
-      </div>
 
       {/* Il link ai percorsi non serve più: è una voce della navigazione in
           basso, sempre a portata di pollice. I preferiti vengono prima perché

@@ -161,6 +161,22 @@ export function RouteGlyph({ className = "" }: GlyphProps) {
   );
 }
 
+/** Avviso: il triangolo, che è il segno universale e si legge a 14 pixel. */
+export function AlertGlyph({ className = "" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
+      <path
+        d="M10 3.2 2.6 16.2h14.8L10 3.2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path d="M10 8v3.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="10" cy="13.6" r="0.9" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function CloseGlyph({ className = "" }: GlyphProps) {
   return (
     <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
