@@ -177,13 +177,75 @@ Caddy serve HTTP puro, senza certificato firmato da CA pubblica. La modalità
 "Full" cifra il tratto Cloudflare→VPS accettando anche certificati self-signed.
 "Full Strict" richiederebbe un certificato valido sul server.
 
-### Firewall VPS (consigliato)
+### Chi blocca il traffico non-Cloudflare (leggere prima di toccare il firewall)
 
-Apri solo la porta 80 e consenti connessioni solo dai range IP di Cloudflare:
-- IPv4: https://www.cloudflare.com/ips-v4
-- IPv6: https://www.cloudflare.com/ips-v6
+Il filtro sta sulle **regole di rete di Azure (NSG)**, non sull'host: sono loro
+ad ammettere traffico in ingresso sulla 80 solo dai range di Cloudflare. È il
+posto giusto, perché sta *fuori* dalla macchina — non lo può scavalcare Docker
+riscrivendo iptables, e sopravvive a riavvii e restart del demone.
 
-Questo impedisce di raggiungere il server bypassando Cloudflare.
+**Le regole `ufw` per la porta 80 esistono ma NON sono quelle che proteggono.**
+Sono rimaste da una configurazione precedente e sono ingannevoli: `ufw status`
+mostra un elenco rassicurante di reti Cloudflare che su quel traffico non ha
+voce. Il motivo:
+
+```
+-P FORWARD DROP
+-A FORWARD -j DOCKER-USER          <- vuota, il pacchetto passa oltre
+-A FORWARD -j DOCKER-FORWARD       <- qui Docker fa ACCEPT
+-A FORWARD -j ufw-before-forward   <- ufw guarda solo DOPO
+```
+
+Docker pubblica la porta con un DNAT (`--dport 80 -j DNAT --to 172.18.0.5:80`),
+quindi il pacchetto viene **inoltrato** e attraversa `FORWARD`, non `INPUT`
+dove vivono le regole di ufw. In `FORWARD` incontra prima gli ACCEPT di Docker
+e finisce accettato. `DOCKER-USER` è il punto documentato per inserire regole
+che girano *prima* di quegli ACCEPT, ed è vuota.
+
+**Conseguenza pratica: non rimuovere le regole Azure pensando che ufw copra.**
+Se un giorno servisse filtrare anche sull'host, la regola va in `DOCKER-USER` e
+va legata all'interfaccia esterna — quella catena vede tutto il traffico
+inoltrato, compreso quello in uscita dai container, e un `--dport 80 -j DROP`
+secco bloccherebbe anche il worker che scarica i feed ATAC in HTTP:
+
+```bash
+sudo iptables -N CF-ONLY
+for c in $(curl -s https://www.cloudflare.com/ips-v4); do
+  sudo iptables -A CF-ONLY -s "$c" -j RETURN
+done
+sudo iptables -A CF-ONLY -j DROP
+sudo iptables -I DOCKER-USER -i <interfaccia-esterna> -p tcp --dport 80 -j CF-ONLY
+```
+
+SSH non è toccato: sta in `INPUT`. E queste regole non sono persistenti al
+riavvio: rete di sicurezza se sbagli, trappola se te ne dimentichi.
+
+### Protezione delle API
+
+Le API sono **pubbliche e senza autenticazione**: diciotto endpoint sotto
+`/api/`, nessun middleware, nessuna chiave. Non è un problema di esposizione
+(sono fatte per essere lette) ma di costo: `/api/plan` esegue decine di
+scansioni CSA più le chiamate a OSRM per ogni richiesta, e su 4 GB condivisi
+con Postgres, OSRM e il worker un ciclo di richieste **affama il worker**, che
+deve battere ogni 60 secondi per non perdere il tempo reale.
+
+Siccome tutto il traffico deve passare da Cloudflare per forza (vedi sopra),
+una regola lato Cloudflare è una barriera **completa e non aggirabile** — non
+un palliativo. Due configurazioni da pannello, zero codice:
+
+| Dove | Regola | Perché |
+|---|---|---|
+| Security → Rate limiting | Una regola su `/api/plan` | È l'unico endpoint costoso. Il piano free ne concede una: va spesa qui. |
+| Caching → Cache Rules | Rispetta gli header dell'origine su `/api/stats/delays` e `/api/alerts` | Mandano già `s-maxage` (600 e 60) ma Cloudflare per default non cacha i percorsi senza estensione. Le statistiche cambiano una volta all'ora, gli avvisi poche volte al giorno: quelle richieste smettono di arrivare al VPS. |
+
+**Da NON accendere su `/api/`**: Bot Fight Mode, Browser Integrity Check e
+Security Level alto. Funzionano mandando al client una sfida JavaScript o un
+controllo sui cookie, e si aspettano un browser: `curl` e un eventuale client
+mobile nativo non possono risolverla. Se servono per il resto del sito, vanno
+esclusi da `/api/*` con una Configuration Rule.
+
+Un rate limit in Caddy resta utile solo come ridondanza — copre il caso di una
+versione dell'app che impazzisce o di una configurazione Cloudflare sbagliata.
 
 ### Porte sul VPS
 
