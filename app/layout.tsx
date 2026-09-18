@@ -58,6 +58,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body className="min-h-full flex flex-col bg-neutral-100 text-neutral-900">
+        {/* Stato del feed in cima, sempre visibile: allineato a destra così
+            non interferisce con i titoli. Sparisce solo prima del primo dato. */}
+        <FeedStatus />
         <main className="flex-1">
           <PageTransition>{children}</PageTransition>
         </main>
@@ -84,10 +87,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </a>
           </p>
         </footer>
-        {/* FeedStatus sta appena sopra la navigazione: è sempre visibile,
-            non interrompe il flusso della pagina, e compare solo quando
-            il feed è stantio — sotto i 90s non disturba. */}
-        <FeedStatus />
         <BottomNav />
         <RegisterSW />
       </body>
