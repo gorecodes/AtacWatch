@@ -10,7 +10,6 @@ import { routeTypeInfo } from "@/lib/gtfs";
 import { usePolling } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
 import { LiveBeacon } from "./Glyphs";
-import ThemeToggle from "./ThemeToggle";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -75,20 +74,16 @@ export default function TripDetail({ tripId }: { tripId: string }) {
       <header className="px-4 pb-1 pt-4">
         <div className="mb-3 flex items-center justify-between">
           <BackButton />
-          {/* Il tasto del tema chiude la riga su ogni pagina. */}
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
-              {vehicle ? (
-                <>
-                  <LiveBeacon />
-                  Mezzo localizzato
-                </>
-              ) : (
-                "Mezzo fantasma"
-              )}
-            </span>
-            <ThemeToggle />
-          </div>
+          <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
+            {vehicle ? (
+              <>
+                <LiveBeacon />
+                Mezzo localizzato
+              </>
+            ) : (
+              "Mezzo fantasma"
+            )}
+          </span>
         </div>
 
         <div className="flex items-center gap-3">

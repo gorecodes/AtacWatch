@@ -1,5 +1,4 @@
 import StatsRitardi from "@/components/StatsRitardi";
-import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata = { title: "Ritardi — Bus Roma" };
 
@@ -11,10 +10,6 @@ export default function RitardiPage() {
         <h1 className="text-[22px] font-bold tracking-tight text-neutral-900">Ritardi</h1>
         <span className="rounded-[3px] bg-brand-500 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
           Beta
-        </span>
-        {/* Il tema si cambia da qui come da ogni altra pagina. */}
-        <span className="ml-auto">
-          <ThemeToggle />
         </span>
       </div>
       <p className="mb-4 text-[13px] text-neutral-600">

@@ -1,6 +1,5 @@
 import SearchBar from "@/components/SearchBar";
 import Benvenuto from "@/components/Benvenuto";
-import ThemeToggle from "@/components/ThemeToggle";
 import NearbyArrivals from "@/components/NearbyArrivals";
 import FavoriteStops from "@/components/FavoriteStops";
 import SupportBanner from "@/components/SupportBanner";
@@ -18,9 +17,8 @@ export default function HomePage() {
           si è già toccata per entrare.
           Niente sottotitolo: il campo di ricerca dice già "cerca una linea o
           una fermata", e scriverlo due volte è solo spazio rubato agli arrivi. */}
-      <header className="mb-4 flex items-center gap-2">
-        <h1 className="flex-1 text-[22px] font-bold tracking-tight text-neutral-900">Fermate</h1>
-        <ThemeToggle />
+      <header className="mb-4">
+        <h1 className="text-[22px] font-bold tracking-tight text-neutral-900">Fermate</h1>
       </header>
 
       <Benvenuto />

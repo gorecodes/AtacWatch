@@ -11,7 +11,6 @@ import Eta from "./Eta";
 import { StarGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
 import BellButton from "./BellButton";
-import ThemeToggle from "./ThemeToggle";
 import Skeleton from "./Skeleton";
 
 type StopInfo = { stop_id: string; name: string; code: string | null } | null;
@@ -68,10 +67,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                 <StarGlyph filled={starred} className="h-6 w-6" />
               </button>
             )}
-            {/* Ultimo a destra, come su ogni pagina: la stella riguarda questa
-                fermata, il tema riguarda l'app, e l'ordine tiene separate le
-                due cose. */}
-            <ThemeToggle />
           </div>
         </div>
 
