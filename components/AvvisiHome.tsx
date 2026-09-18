@@ -9,9 +9,13 @@ import { usePolling } from "@/lib/usePolling";
  *
  * Non è una voce della navigazione in basso: quattro destinazioni fisse ci
  * stanno, cinque no, e uno slot permanente per una pagina spesso vuota è
- * spazio buttato. Qui invece il riquadro compare quando ci sono avvisi di
- * oggi e scompare quando non ce ne sono — che è anche il modo di dire
- * "oggi non c'è niente" senza scriverlo.
+ * spazio buttato. Qui invece la riga compare quando ci sono avvisi di oggi e
+ * scompare quando non ce ne sono — che è anche il modo di dire "oggi non c'è
+ * niente" senza scriverlo.
+ *
+ * Una riga, non un riquadro: la prima versione era un blocco ambrato con il
+ * testo in grassetto, e sopra la ricerca pesava più del contenuto della
+ * pagina. Il numero basta, chi è interessato tocca.
  *
  * Conta solo gli urgenti. I cantieri sono sempre attivi: annunciarli in home
  * vorrebbe dire avere un riquadro acceso per sempre, che è esattamente il
@@ -34,17 +38,12 @@ export default function AvvisiHome() {
   if (urgenti === 0) return null;
 
   return (
-    <Link
-      href="/avvisi"
-      className="flex items-center gap-2.5 rounded border border-amber-300 bg-amber-50 px-3 py-2.5 active:bg-amber-100"
-    >
-      <span className="text-[15px] font-bold text-amber-900">
+    <Link href="/avvisi" className="flex items-center gap-1.5 py-0.5">
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+      <span className="text-[12px] text-amber-700">
         {urgenti === 1 ? "1 avviso oggi" : `${urgenti} avvisi oggi`}
       </span>
-      <span className="min-w-0 flex-1 truncate text-[13px] text-amber-800">
-        deviazioni e percorsi modificati
-      </span>
-      <span className="shrink-0 text-[13px] font-semibold text-amber-900">›</span>
+      <span className="text-[12px] text-neutral-400 underline underline-offset-2">vedi</span>
     </Link>
   );
 }

@@ -28,11 +28,12 @@ export default function HomePage() {
 
       <SearchBar />
 
-      {/* Gli avvisi di oggi subito sotto la ricerca: se una linea è deviata
-          per una manifestazione, saperlo prima di cercare la fermata cambia
-          quello che si cerca. Il riquadro non c'è quando non ci sono avvisi
-          urgenti, che è il modo di dire "oggi niente" senza occupare spazio. */}
-      <div className="mt-3">
+      {/* Gli avvisi di oggi subito sotto la ricerca, in una riga sola: se una
+          linea è deviata per una manifestazione, saperlo prima di cercare la
+          fermata cambia quello che si cerca. La riga non c'è quando non ci
+          sono avvisi urgenti, che è il modo di dire "oggi niente" senza
+          occupare spazio. */}
+      <div className="mt-2">
         <AvvisiHome />
       </div>
 

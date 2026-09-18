@@ -37,10 +37,21 @@ export async function GET(req: Request) {
          where ${route} = any(route_ids)
       `;
     } else if (stop) {
-      // Le linee che servono la fermata, poi gli avvisi di quelle linee.
+      // Gli avvisi delle linee che servono la fermata.
+      //
+      // `linee_qui` è l'intersezione tra le linee dell'avviso e quelle che
+      // fermano QUI, ed è indispensabile: l'avviso di Piazza Venezia riguarda
+      // 12 linee, ma a una fermata servita solo dalla 60 mostrarne dodici
+      // sarebbe incomprensibile. Si usa lo short_name perché "60" è il nome
+      // che la gente conosce, non il route_id interno.
       righe = await sql<AvvisoRaw[]>`
         select a.id, a.header, a.description, a.cause, a.effect, a.route_ids,
-               a.start_ts::text, a.end_ts::text
+               a.start_ts::text, a.end_ts::text,
+               (select array_agg(distinct r.short_name order by r.short_name)
+                  from route_stops rs
+                  join routes r on r.route_id = rs.route_id
+                 where rs.stop_id = ${stop}
+                   and rs.route_id = any(a.route_ids)) as linee_qui
           from service_alerts a
          where exists (
                  select 1 from route_stops rs

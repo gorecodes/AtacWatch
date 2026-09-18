@@ -5,21 +5,18 @@ import { usePolling } from "@/lib/usePolling";
 import type { Avviso } from "@/lib/avvisi";
 
 /**
- * Avvisi di servizio in contesto: sulla pagina della linea e su quella della
- * fermata, dove servono a cambiare una decisione.
+ * Avvisi di servizio in contesto, in UNA RIGA.
  *
- * DUE PESI DIVERSI, ed è il punto di tutta la feature:
+ * La prima versione usava riquadri pieni ambrati: troppo invadenti, e sulla
+ * pagina della fermata mettevano un blocco di colore prima del dato per cui
+ * l'utente ha aperto l'app. Qui il peso è quello di una nota: testo piccolo,
+ * un pallino, niente sfondo. Si apre col tocco se si vuole il testo completo.
  *
- *   - urgente (manifestazione, incidente, polizia: dura un giorno) → riquadro
- *     ambrato, aperto, impossibile non vederlo. È la notizia di oggi.
- *   - strutturale (cantiere: dura mesi) → una riga grigia, chiusa, che si
- *     apre se uno vuole. È contesto, non allarme. Metterlo in rosso vorrebbe
- *     dire marchiare mezza rete di Roma in permanenza, e un avviso sempre
- *     acceso non lo legge più nessuno dopo tre giorni.
- *
- * Sulla fermata si passa `soloUrgenti`: il collegamento fermata→avviso è
- * un'inferenza dalle linee che ci passano, e su un nodo affollato i cantieri
- * di dieci linee diverse sarebbero rumore puro.
+ * LA LINEA VA DETTA. Sulla fermata "deviata per manifestazione" senza dire
+ * DEVIATA CHI è inutile: la fermata è servita da otto linee. `lineeQui`
+ * contiene solo le linee dell'avviso che fermano lì, calcolate dall'API —
+ * l'avviso di Piazza Venezia riguarda 12 linee, ma a una fermata servita
+ * dalla sola 60 va scritto "60".
  */
 export default function Avvisi({
   routeId,
@@ -31,7 +28,7 @@ export default function Avvisi({
   soloUrgenti?: boolean;
 }) {
   const [avvisi, setAvvisi] = useState<Avviso[] | null>(null);
-  const [aperti, setAperti] = useState<Set<string>>(new Set());
+  const [aperto, setAperto] = useState<string | null>(null);
 
   const carica = useCallback(async () => {
     const q = routeId ? `?route=${encodeURIComponent(routeId)}`
@@ -56,62 +53,51 @@ export default function Avvisi({
   if (mostrati.length === 0) return null;
 
   return (
-    <div className="mb-3 space-y-1.5">
+    <ul className="space-y-1">
       {mostrati.map((a) => {
-        const aperto = aperti.has(a.id);
-        const toggle = () =>
-          setAperti((s) => {
-            const n = new Set(s);
-            if (n.has(a.id)) n.delete(a.id);
-            else n.add(a.id);
-            return n;
-          });
-
-        if (a.urgente) {
-          return (
-            <div
-              key={a.id}
-              className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900"
-            >
-              <p className="text-[13px] font-bold leading-snug">
-                {a.effetto}
-                {a.causa && <span className="font-medium"> · {a.causa}</span>}
-                {a.quando && <span className="font-medium"> · {a.quando}</span>}
-              </p>
-              <p className="mt-0.5 text-[13px] leading-snug">{a.titolo}</p>
-              {a.dettaglio && (
-                <p className="mt-1 text-[12px] leading-relaxed text-amber-800">{a.dettaglio}</p>
-              )}
-            </div>
-          );
-        }
-
-        // Strutturale: una riga, tono basso, apribile.
+        const espanso = aperto === a.id;
+        // Sulla pagina della linea il nome è già nel titolo della pagina:
+        // ripeterlo in ogni riga è ridondante.
+        const linee = routeId ? [] : a.lineeQui;
         return (
-          <div key={a.id} className="rounded border border-neutral-300 bg-neutral-50">
+          <li key={a.id}>
             <button
-              onClick={toggle}
-              aria-expanded={aperto}
-              className="flex w-full items-start gap-2 px-3 py-2 text-left"
+              onClick={() => setAperto(espanso ? null : a.id)}
+              aria-expanded={espanso}
+              className="flex w-full items-start gap-1.5 py-0.5 text-left"
             >
-              <span className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400" />
-              <span className="min-w-0 flex-1 text-[12px] leading-snug text-neutral-600">
-                <span className="font-semibold text-neutral-800">{a.effetto}</span>
-                {a.causa && ` per ${a.causa}`}
-                {a.quando && ` · ${a.quando}`}
+              <span
+                className={`mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full ${
+                  a.urgente ? "bg-amber-500" : "bg-neutral-400"
+                }`}
+              />
+              <span className="min-w-0 flex-1 text-[12px] leading-snug">
+                {linee.length > 0 && (
+                  <span className="font-bold text-neutral-900">
+                    {linee.slice(0, 4).join(", ")}
+                    {linee.length > 4 && ` +${linee.length - 4}`}{" "}
+                  </span>
+                )}
+                <span className={a.urgente ? "text-amber-700" : "text-neutral-500"}>
+                  {linee.length > 0 ? a.effetto.toLowerCase() : a.effetto}
+                  {a.causa && ` per ${a.causa}`}
+                  {a.quando && ` · ${a.quando}`}
+                </span>
               </span>
             </button>
-            {aperto && (
-              <div className="border-t border-neutral-200 px-3 py-2">
+            {espanso && (
+              <div className="ml-3 border-l border-neutral-300 pl-2.5 pb-1">
                 <p className="text-[12px] leading-relaxed text-neutral-700">{a.titolo}</p>
                 {a.dettaglio && (
-                  <p className="mt-1 text-[12px] leading-relaxed text-neutral-500">{a.dettaglio}</p>
+                  <p className="mt-0.5 text-[12px] leading-relaxed text-neutral-500">
+                    {a.dettaglio}
+                  </p>
                 )}
               </div>
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

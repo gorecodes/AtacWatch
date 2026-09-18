@@ -24,6 +24,8 @@ export type AvvisoRaw = {
   route_ids: string[] | null;
   start_ts: string | null;
   end_ts: string | null;
+  /** Solo per ?stop=: le linee dell'avviso che fermano davvero lì. */
+  linee_qui?: string[] | null;
 };
 
 export type Avviso = {
@@ -36,6 +38,13 @@ export type Avviso = {
   /** Formato "fino al 31 ottobre" o "oggi", per dirlo senza far contare i giorni. */
   quando: string | null;
   linee: string[];
+  /**
+   * Le linee coinvolte con il nome che conosce la gente ("60", non il
+   * route_id), limitate a quelle pertinenti al contesto. Sulla fermata è
+   * l'informazione che rende l'avviso utilizzabile: senza di essa si legge
+   * "deviata per manifestazione" senza sapere deviata chi.
+   */
+  lineeQui: string[];
 };
 
 /**
@@ -165,5 +174,6 @@ export function normalizza(r: AvvisoRaw, adesso: Date = new Date()): Avviso | nu
     urgente,
     quando,
     linee: r.route_ids ?? [],
+    lineeQui: r.linee_qui ?? [],
   };
 }

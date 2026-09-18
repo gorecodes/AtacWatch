@@ -87,7 +87,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           Solo gli urgenti: il collegamento fermata→avviso è dedotto dalle
           linee che ci passano, e su un nodo affollato i cantieri di dieci
           linee sarebbero rumore. */}
-      <div className="px-4 pt-2">
+      <div className="px-4 pt-1.5">
         <Avvisi stopId={stopId} soloUrgenti />
       </div>
 
