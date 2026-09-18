@@ -9,14 +9,14 @@ type Linea = {
   short_name: string;
   color: string | null;
   text_color: string | null;
-  campioni: number;
+  corse: number;
   media_s: number;
   perc_ritardo: number;
   peggiore_s: number;
 };
 type Dati = {
-  periodo: { dal: string | null; al: string | null; campioni: number; ore: number };
-  minCampioni: number;
+  periodo: { dal: string | null; al: string | null; corse: number; ore: number };
+  minCorse: number;
   linee: Linea[];
 };
 
@@ -60,15 +60,15 @@ export default function StatsRitardi() {
   }
   if (!dati) return <Skeleton righe={6} />;
 
-  const { periodo, linee, minCampioni } = dati;
+  const { periodo, linee, minCorse } = dati;
   const pochiDati = periodo.ore < ORE_PER_FIDARSI;
 
   return (
     <div>
       {/* Il campione si dichiara SEMPRE, e prima dei numeri: una percentuale
-          senza sapere su quante osservazioni poggia non è un dato. */}
+          senza sapere su quante corse poggia non è un dato. */}
       <p className="mb-4 text-[13px] leading-relaxed text-neutral-600">
-        {periodo.campioni.toLocaleString("it-IT")} osservazioni raccolte in{" "}
+        {periodo.corse.toLocaleString("it-IT")} corse osservate in{" "}
         {periodo.ore === 1 ? "un'ora" : `${periodo.ore} ore`} di servizio.
         {pochiDati && (
           <>
@@ -84,14 +84,14 @@ export default function StatsRitardi() {
 
       {linee.length === 0 ? (
         <p className="py-6 text-[14px] text-neutral-600">
-          Nessuna linea ha ancora abbastanza osservazioni. Serve tempo: il
+          Nessuna linea ha ancora abbastanza corse osservate. Serve tempo: il
           conteggio va avanti da sé.
         </p>
       ) : (
         <>
           <div className="mb-1 flex items-baseline justify-between">
             <h2 className="text-[13px] font-semibold text-neutral-500">Meno puntuali</h2>
-            <span className="text-[12px] text-neutral-400">oltre 2 minuti</span>
+            <span className="text-[12px] text-neutral-400">oltre 5 minuti</span>
           </div>
           <ul className="divide-y divide-neutral-200 border-y border-neutral-300">
             {linee.map((l) => (
@@ -113,7 +113,7 @@ export default function StatsRitardi() {
                     {Math.round(l.media_s / 60) === 0
                       ? "in media in orario"
                       : `in media ${minuti(l.media_s)} min`}{" "}
-                    · punta {minuti(l.peggiore_s)} · {l.campioni.toLocaleString("it-IT")} oss.
+                    · punta {minuti(l.peggiore_s)} · {l.corse.toLocaleString("it-IT")} corse
                   </span>
                 </span>
                 {/* Barra proporzionale: a colpo d'occhio dice più di una cifra. */}
@@ -131,10 +131,16 @@ export default function StatsRitardi() {
 
       <div className="mt-4 space-y-2 text-[12px] leading-relaxed text-neutral-500">
         <p>
-          Come si misura: a ogni aggiornamento si guarda lo scostamento dichiarato da ATAC
-          per la prossima fermata di ogni corsa in servizio. Compaiono solo le linee con
-          almeno {minCampioni} osservazioni, perché sotto quella soglia una percentuale è
-          rumore travestito da dato.
+          Come si misura: si guarda lo scostamento dichiarato da ATAC per la prossima
+          fermata di ogni corsa in servizio, e ogni corsa pesa una volta per fascia
+          oraria — non una volta al minuto, altrimenti un mezzo bloccato nel traffico
+          conterebbe quaranta volte. Compaiono solo le linee con almeno {minCorse}
+          {" "}corse osservate.
+        </p>
+        <p>
+          &quot;In ritardo&quot; vuol dire oltre i 5 minuti: due minuti su un bus
+          urbano non li nota nessuno, e diverse linee hanno un orario di tabella
+          ottimista di un paio di minuti su cui non ha senso puntare il dito.
         </p>
         <p>
           Gli scostamenti oltre i 45 minuti e gli anticipi oltre i 10 sono scartati: nel
