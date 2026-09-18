@@ -89,6 +89,19 @@ export default function RouteMap({
     if (map.isStyleLoaded()) setReady(true);
     else map.on("load", () => setReady(true));
 
+    // Posizione dell'utente. trackUserLocation: false → il tasto centra la
+    // mappa sulla posizione ma non la insegue, che su una mappa di linea è
+    // il comportamento giusto (non vuoi che la mappa scappi mentre guardi il
+    // tracciato). Il pallino blu di MapLibre si aggiorna comunque.
+    map.addControl(
+      new maplibregl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: false,
+        showUserLocation: true,
+      }),
+      "bottom-right",
+    );
+
     // Quando il contenitore passa da altezza 0 alla sua misura vera, riprova
     // l'inquadratura: è il caso in cui il fit iniziale non poteva riuscire.
     const ro = new ResizeObserver(() => {
@@ -146,10 +159,27 @@ export default function RouteMap({
           type: "circle",
           source: "route-stops",
           paint: {
-            "circle-radius": 4,
+            // Raggio dipendente dallo zoom: piccolo quando la mappa è lontana
+            // (i pallini si sovrapporrebbero), grande da zoom 14 in su dove
+            // l'utente vuole tappare una fermata specifica. Il minimo è 5px
+            // per restare visibile, il massimo è 9px — su mobile la soglia di
+            // tap usabile è ~22px di diametro, che includerà l'area di stroke.
+            "circle-radius": [
+              "interpolate", ["linear"], ["zoom"],
+              11, 4,
+              14, 7,
+              16, 9,
+            ],
             "circle-color": "#ffffff",
             "circle-stroke-color": lineColor,
-            "circle-stroke-width": 2,
+            // Stroke più spesso a zoom alto: contribuisce all'area tappabile
+            // senza ingrossare troppo il pallino visivo a zoom basso.
+            "circle-stroke-width": [
+              "interpolate", ["linear"], ["zoom"],
+              11, 1.5,
+              14, 2.5,
+              16, 3,
+            ],
           },
         });
       }
