@@ -37,6 +37,32 @@ export default function PrivacyPage() {
       </p>
 
       <div className="space-y-5 text-[13px] leading-relaxed text-neutral-700">
+        {/* Identità del titolare: è il primo dei contenuti obbligatori
+            dell'art. 13, e va prima del resto. */}
+        <section>
+          <h2 className="mb-1 text-[15px] font-bold text-neutral-900">Chi gestisce l&apos;app</h2>
+          <p>
+            Bus Roma è un progetto personale di Paolo Pulli, titolare del
+            trattamento dei pochi dati descritti qui sotto. Contatti:{" "}
+            <a
+              href="mailto:paolo.pulli@proton.me"
+              className="underline underline-offset-2 hover:text-neutral-900"
+            >
+              paolo.pulli@proton.me
+            </a>
+            {" "}e{" "}
+            <a
+              href="https://x.com/codingpao"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-neutral-900"
+            >
+              @codingpao
+            </a>
+            . Non è un servizio ufficiale ATAC né di Roma Capitale.
+          </p>
+        </section>
+
         <section>
           <h2 className="mb-1 text-[15px] font-bold text-neutral-900">Cosa resta sul tuo telefono</h2>
           <p className="mb-2">
@@ -111,12 +137,30 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="mb-1 text-[15px] font-bold text-neutral-900">I tuoi diritti</h2>
-          <p>
+          <p className="mb-2">
             Il GDPR ti dà diritto di accedere ai tuoi dati, correggerli e
             cancellarli. In pratica, qui: i dati stanno sul tuo telefono e li
             cancelli tu svuotando i dati del sito. Per le notifiche, revocare il
-            permesso dal browser è sufficiente. Per qualunque domanda o richiesta
-            puoi scrivere all&apos;indirizzo indicato nella pagina di contatto.
+            permesso dal browser è sufficiente.
+          </p>
+          <p>
+            Per qualunque domanda o richiesta:{" "}
+            <a
+              href="mailto:paolo.pulli@proton.me"
+              className="underline underline-offset-2 hover:text-neutral-900"
+            >
+              paolo.pulli@proton.me
+            </a>
+            {" "}oppure{" "}
+            <a
+              href="https://x.com/codingpao"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-neutral-900"
+            >
+              @codingpao
+            </a>
+            .
           </p>
         </section>
 
