@@ -3,6 +3,7 @@ import { Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
 import BottomNav from "@/components/BottomNav";
+import FeedStatus from "@/components/FeedStatus";
 import PageTransition from "@/components/PageTransition";
 
 const barlow = Barlow({
@@ -83,6 +84,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </a>
           </p>
         </footer>
+        {/* FeedStatus sta appena sopra la navigazione: è sempre visibile,
+            non interrompe il flusso della pagina, e compare solo quando
+            il feed è stantio — sotto i 90s non disturba. */}
+        <FeedStatus />
         <BottomNav />
         <RegisterSW />
       </body>

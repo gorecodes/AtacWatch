@@ -58,12 +58,11 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           <BackButton />
 
           <div className="flex items-center gap-3">
-            {updatedAt && !error && (
-              <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
-                <LiveBeacon />
-                {updatedAt.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-              </span>
-            )}
+            {/* Il LiveBeacon segnala che la pagina si aggiorna: l'orario esatto
+                dell'ultimo aggiornamento del feed ATAC è nella striscia globale
+                sopra la navigazione (FeedStatus), che è più accurato del
+                timestamp del browser. */}
+            {updatedAt && !error && <LiveBeacon />}
             {stop && (
               <button
                 onClick={() => toggle({ stop_id: stopId, name: stop.name, code: stop.code ?? null })}
