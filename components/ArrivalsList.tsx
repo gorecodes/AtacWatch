@@ -131,29 +131,48 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           const avvisoAperto = apertoId === chiave;
 
           return (
-            <li key={chiave}>
+            // Il colore della riga lo usiamo SOLO quando l'avviso è aperto:
+            // dice quale riga stai leggendo, e sparisce appena chiudi. Tingere
+            // stabilmente le righe con avviso invece andava addosso al colore
+            // dell'ETA, che distingue il tracciato dal previsto ed è il dato
+            // più importante della lista.
+            <li
+              key={chiave}
+              className={avvisoAperto ? "-mx-2 rounded bg-amber-50/70 px-2" : undefined}
+            >
+              {/* Il triangolo sta a SINISTRA, subito dopo il numero della
+                  linea. Prima era a destra accanto alla campanella: due
+                  bersagli da tocco adiacenti sono il modo di far sbagliare il
+                  dito, e la riga sembrava piena. Ai due capi opposti si
+                  toccano senza pensarci, e accanto al numero è anche il posto
+                  logico — l'avviso riguarda quella linea.
+                  Due Link allo stesso indirizzo perché il triangolo in mezzo
+                  è interattivo e non può stare dentro un'ancora. */}
               <div className="flex items-center">
-                <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
+                <Link href={href} className="shrink-0 py-2.5 pr-2.5 active:opacity-60">
                   <RouteBadge shortName={a.short_name} color={a.color} textColor={a.text_color} />
+                </Link>
 
+                {suoiAvvisi && (
+                  <button
+                    onClick={() => setApertoId(avvisoAperto ? null : chiave)}
+                    aria-expanded={avvisoAperto}
+                    aria-label={`Avviso di servizio sulla linea ${a.short_name}`}
+                    className={`-ml-1 flex h-11 w-7 shrink-0 items-center justify-center ${
+                      avvisoAperto ? "text-amber-800" : "text-amber-600"
+                    }`}
+                  >
+                    <AlertGlyph className="h-[15px] w-[15px]" />
+                  </button>
+                )}
+
+                <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
                   <span className="name min-w-0 flex-1 truncate text-[15px] leading-snug text-neutral-900">
                     {a.headsign ?? "Destinazione non indicata"}
                   </span>
 
                   <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
                 </Link>
-
-                {/* Fuori dal Link, altrimenti toccarlo aprirebbe la corsa. */}
-                {suoiAvvisi && (
-                  <button
-                    onClick={() => setApertoId(avvisoAperto ? null : chiave)}
-                    aria-expanded={avvisoAperto}
-                    aria-label={`Avviso di servizio sulla linea ${a.short_name}`}
-                    className="flex h-11 w-8 shrink-0 items-center justify-center text-amber-600 active:text-amber-800"
-                  >
-                    <AlertGlyph className="h-[15px] w-[15px]" />
-                  </button>
-                )}
 
                 {bellUtile && (
                   <BellButton
@@ -166,7 +185,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
               </div>
 
               {avvisoAperto && suoiAvvisi && (
-                <div className="pb-2.5 pl-1 pr-2">
+                <div className="pb-2.5 pr-2">
                   {suoiAvvisi.map((av) => (
                     <div key={av.id} className="border-l-2 border-amber-400 pl-2.5">
                       <p className="text-[12px] font-semibold leading-snug text-amber-700">
