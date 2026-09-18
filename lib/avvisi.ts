@@ -70,9 +70,9 @@ export type Avviso = {
  *
  * ATAC scrive i testi in Windows-1252 e da qualche parte nella catena i byte
  * 0x80–0x9F vengono interpretati come codepoint Unicode invece che tradotti.
- * Risultato: nel database c'è `Lavori Realizzazione tranviaria`
+ * Risultato: nel database c'è `Lavori Realizzazione tranviaria`
  * invece di «Lavori "Realizzazione tranviaria"». Senza questa tabella
- * l'utente legge `` in pagina.
+ * l'utente legge `` in pagina.
  *
  * Si gestiscono entrambe le forme: la sequenza letterale di sei caratteri e
  * il codepoint vero, perché a seconda del punto della catena può arrivare
@@ -89,12 +89,41 @@ export function pulisci(testo: string | null): string {
   if (!testo) return "";
   return (
     testo
-      // Forma letterale: i sei caratteri 
+      // 1) Virgolette e apostrofi di Windows, forma letterale: la sequenza di
+      //    sei caratteri backslash-u-0-0-9-3 e simili.
       .replace(/\\u00([89][0-9a-f])/gi, (m, hex) => CP1252[parseInt(hex, 16)] ?? m)
-      // Forma vera: il carattere di controllo C1 (U+0080 a U+009F).
-      .replace(/[-]/g, (c) => CP1252[c.charCodeAt(0)] ?? "")
-      // ATAC scrive tutto in maiuscolo su molti avvisi: lasciato com'è,
-      // perché riscriverlo a mano sbaglierebbe i nomi propri.
+      // 2) Stessa cosa, forma vera: il carattere di controllo C1. Scritto
+      //    \x80-\x9f e non : sono caratteri ASCII nel sorgente, quindi
+      //    nessuno strumento di editing li puo' trasformare in controlli
+      //    invisibili. E' gia' capitato, e il commento accanto era diventato
+      //    illeggibile.
+      .replace(/[\x80-\x9f]/g, (c) => CP1252[c.charCodeAt(0)] ?? "")
+      // 3) Entita' HTML. Nel feed si trova "P.za dell&#039; Esquilino": senza
+      //    decodifica l'utente legge &#039; in pagina, esattamente come
+      //    leggeva la sequenza di escape. Le numeriche prima delle nominate, e
+      //    &amp; per ultima, altrimenti "&amp;#039;" verrebbe decodificata due
+      //    volte.
+      .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+      .replace(/&apos;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      // 4) Spazi. ATAC scrive "Prov.  da  Via  Giolitti" con doppi spazi e
+      //    infila ritorni a capo in mezzo alla prosa: in un paragrafo vanno
+      //    trattati come spazi, altrimenti compaiono interruzioni che non
+      //    significano niente.
+      .replace(/\s+/g, " ")
+      // 5) Spazio prima della punteggiatura: nel feed si legge "V. Merulana ,
+      //    P.za San Giovanni". E' solo sciatteria tipografica di chi ha
+      //    scritto l'avviso, e togliendola la prosa diventa leggibile. Non
+      //    tocca le abbreviazioni tipo "P.za", dove il punto non e' precedu-
+      //    to da spazio.
+      .replace(/\s+([,;:.!?])/g, "$1")
+      // ATAC scrive tutto in maiuscolo su molti avvisi: lasciato com'e',
+      // perche' riscriverlo a mano sbaglierebbe i nomi propri.
       .trim()
   );
 }
