@@ -3,8 +3,6 @@ import { Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
 import BottomNav from "@/components/BottomNav";
-import FeedStatus from "@/components/FeedStatus";
-import ThemeToggle from "@/components/ThemeToggle";
 import PageTransition from "@/components/PageTransition";
 
 const barlow = Barlow({
@@ -59,12 +57,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body className="min-h-full flex flex-col bg-neutral-100 text-neutral-900">
-        {/* Barra globale: stato del feed a sinistra del tasto tema.
-            Entrambi vivono qui una volta sola invece di stare in ogni pagina. */}
-        <div className="flex items-center justify-end gap-2 px-2">
-          <FeedStatus />
-          <ThemeToggle />
-        </div>
         <main className="flex-1">
           <PageTransition>{children}</PageTransition>
         </main>

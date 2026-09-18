@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import JourneyPlanner from "@/components/JourneyPlanner";
+import HeaderActions from "@/components/HeaderActions";
 
 export const metadata = { title: "Percorsi — Bus Roma" };
 
@@ -15,6 +16,9 @@ export default function PlanPage() {
             scriverlo che far scoprire i limiti a chi sta correndo. */}
         <span className="rounded-[3px] bg-brand-500 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
           Beta
+        </span>
+        <span className="ml-auto">
+          <HeaderActions />
         </span>
       </div>
       <p className="mb-4 text-[13px] text-neutral-600">

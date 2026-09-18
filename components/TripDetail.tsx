@@ -10,6 +10,7 @@ import { routeTypeInfo } from "@/lib/gtfs";
 import { usePolling } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
 import { LiveBeacon } from "./Glyphs";
+import HeaderActions from "./HeaderActions";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -74,16 +75,19 @@ export default function TripDetail({ tripId }: { tripId: string }) {
       <header className="px-4 pb-1 pt-4">
         <div className="mb-3 flex items-center justify-between">
           <BackButton />
-          <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
-            {vehicle ? (
-              <>
-                <LiveBeacon />
-                Mezzo localizzato
-              </>
-            ) : (
-              "Mezzo fantasma"
-            )}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[12px] text-neutral-500">
+              {vehicle ? (
+                <>
+                  <LiveBeacon />
+                  Mezzo localizzato
+                </>
+              ) : (
+                "Mezzo fantasma"
+              )}
+            </span>
+            <HeaderActions />
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

@@ -11,6 +11,7 @@ import Eta from "./Eta";
 import { StarGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
 import BellButton from "./BellButton";
+import HeaderActions from "./HeaderActions";
 import Skeleton from "./Skeleton";
 
 type StopInfo = { stop_id: string; name: string; code: string | null } | null;
@@ -67,6 +68,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                 <StarGlyph filled={starred} className="h-6 w-6" />
               </button>
             )}
+            <HeaderActions />
           </div>
         </div>
 
