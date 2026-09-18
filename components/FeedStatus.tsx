@@ -32,13 +32,13 @@ export default function FeedStatus() {
 
   const dot =
     stale < 90  ? "bg-live-500" :
-    stale < 300 ? "bg-amber-500" :
-                  "bg-red-500";
+    stale < 300 ? "bg-warn-500" :
+                  "bg-brand-500";
 
   const color =
     stale < 90  ? "text-neutral-400" :
-    stale < 300 ? "text-amber-600" :
-                  "text-red-600";
+    stale < 300 ? "text-warn-600" :
+                  "text-brand-600";
 
   const testo =
     stale < 300 ? etichetta(stale) :

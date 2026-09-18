@@ -65,7 +65,7 @@ export default function ElencoAvvisi() {
             {urgenti.map((a) => (
               <li
                 key={a.id}
-                className="rounded border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-900"
+                className="rounded border border-warn-300 bg-warn-50 px-3 py-2.5 text-warn-700"
               >
                 <p className="text-[13px] font-bold leading-snug">
                   {a.effetto}
@@ -74,7 +74,7 @@ export default function ElencoAvvisi() {
                 </p>
                 <p className="mt-0.5 text-[13px] leading-snug">{a.titolo}</p>
                 {a.dettaglio && (
-                  <p className="mt-1 text-[12px] leading-relaxed text-amber-800">{a.dettaglio}</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-warn-600">{a.dettaglio}</p>
                 )}
                 <Linee linee={a.linee} className="mt-1.5" />
               </li>

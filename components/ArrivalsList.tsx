@@ -8,10 +8,9 @@ import { usePolling, useNow } from "@/lib/usePolling";
 import { useFavorites } from "@/lib/favorites";
 import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
-import { StarGlyph } from "./Glyphs";
+import { StarGlyph, AlertGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
 import BellButton from "./BellButton";
-import { AlertGlyph } from "./Glyphs";
 import { useAvvisi, avvisiPerLinea } from "@/lib/useAvvisi";
 import HeaderActions from "./HeaderActions";
 import Skeleton from "./Skeleton";
@@ -138,7 +137,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
             // più importante della lista.
             <li
               key={chiave}
-              className={avvisoAperto ? "-mx-2 rounded bg-amber-50/70 px-2" : undefined}
+              className={avvisoAperto ? "-mx-2 rounded bg-warn-50 px-2" : undefined}
             >
               {/* Il triangolo sta a SINISTRA, subito dopo il numero della
                   linea. Prima era a destra accanto alla campanella: due
@@ -159,7 +158,7 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                     aria-expanded={avvisoAperto}
                     aria-label={`Avviso di servizio sulla linea ${a.short_name}`}
                     className={`-ml-1 flex h-11 w-7 shrink-0 items-center justify-center ${
-                      avvisoAperto ? "text-amber-800" : "text-amber-600"
+                      avvisoAperto ? "text-warn-700" : "text-warn-600"
                     }`}
                   >
                     <AlertGlyph className="h-[15px] w-[15px]" />
@@ -187,8 +186,8 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
               {avvisoAperto && suoiAvvisi && (
                 <div className="pb-2.5 pr-2">
                   {suoiAvvisi.map((av) => (
-                    <div key={av.id} className="border-l-2 border-amber-400 pl-2.5">
-                      <p className="text-[12px] font-semibold leading-snug text-amber-700">
+                    <div key={av.id} className="border-l-2 border-warn-400 pl-2.5">
+                      <p className="text-[12px] font-semibold leading-snug text-warn-700">
                         {/* Stesso scrupolo del riquadro: sappiamo che la linea è
                             coinvolta, non che lo sia questa fermata, tranne nei
                             3 avvisi su 181 in cui ATAC dichiara gli stop_ids. */}

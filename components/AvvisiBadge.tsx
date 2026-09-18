@@ -39,7 +39,7 @@ export default function AvvisiBadge() {
     <Link
       href="/avvisi"
       aria-label={`${urgenti} avvisi di servizio oggi`}
-      className="flex shrink-0 items-center gap-0.5 text-amber-600 active:text-amber-800"
+      className="flex shrink-0 items-center gap-0.5 text-warn-600 active:text-warn-700"
     >
       <AlertGlyph className="h-[13px] w-[13px]" />
       <span className="text-[12px] font-semibold tabular-nums">{urgenti}</span>

@@ -17,7 +17,12 @@ import type { Avviso } from "@/lib/avvisi";
  * contiene solo le linee dell'avviso che fermano lì, calcolate dall'API —
  * l'avviso di Piazza Venezia riguarda 12 linee, ma a una fermata servita
  * dalla sola 60 va scritto "60".
+ *
+ * NOTA: sulla pagina fermata questo componente non si usa più — le righe
+ * degli arrivi portano il loro avviso (vedi ArrivalsList). Resta in uso sulla
+ * pagina della linea, dove l'avviso riguarda il soggetto della pagina intera.
  */
+
 /**
  * Da "Deviata" a "una deviazione", perché la frase diventa "la 51 con una
  * deviazione sul percorso": afferma che il disservizio esiste sulla linea,
@@ -86,7 +91,7 @@ export default function Avvisi({
             >
               <span
                 className={`mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full ${
-                  a.urgente ? "bg-amber-500" : "bg-neutral-400"
+                  a.urgente ? "bg-warn-500" : "bg-neutral-400"
                 }`}
               />
               <span className="min-w-0 flex-1 text-[12px] leading-snug">
@@ -96,7 +101,7 @@ export default function Avvisi({
                     {linee.length > 4 && ` +${linee.length - 4}`}{" "}
                   </span>
                 )}
-                <span className={a.urgente ? "text-amber-700" : "text-neutral-500"}>
+                <span className={a.urgente ? "text-warn-700" : "text-neutral-500"}>
                   {/* LE PAROLE CONTANO. Sulla fermata sappiamo che la linea è
                       deviata da qualche parte, non che lo sia QUI: ATAC
                       dichiara le fermate coinvolte in 3 avvisi su 181. Dire

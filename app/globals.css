@@ -54,6 +54,19 @@
   --color-live-500: #00875A;
   --color-live-600: #006B48;
   --color-live-700: #005437;
+
+  /* Ambra "attenzione": avvisi di servizio e feed stantio.
+     Deve essere una scala NOSTRA e non l'amber di Tailwind, perché i colori
+     grezzi non vengono ribaltati in modalità scura: un `bg-amber-50` su fondo
+     scuro resta un giallo chiaro, e col testo ambra scuro sopra non si legge
+     niente. Come il rosso e il verde, è denso per reggere il sole a una
+     fermata, non un giallo acceso. */
+  --color-warn-50:  #FBF3DF;
+  --color-warn-300: #DFBE68;
+  --color-warn-400: #C99A1E;
+  --color-warn-500: #A8740B;
+  --color-warn-600: #8A5E08;
+  --color-warn-700: #6E4A06;
 }
 
 :root {
@@ -105,6 +118,17 @@
   --color-live-500: #2fc98a;
   --color-live-600: #47d69a;
   --color-live-700: #61dfa8;
+
+  /* L'ambra segue la stessa regola: la superficie si scurisce, il testo e i
+     segni si schiariscono. Il 700, che in chiaro è il testo più scuro, qui
+     diventa il più chiaro — perché i componenti usano sempre `warn-700` per
+     il testo e `warn-50` per il fondo, e così non sanno nulla del tema. */
+  --color-warn-50: #2a2113;
+  --color-warn-300: #6d5828;
+  --color-warn-400: #b89231;
+  --color-warn-500: #e0ae38;
+  --color-warn-600: #ebc258;
+  --color-warn-700: #f2d179;
 }
 
 html,
