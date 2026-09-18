@@ -121,12 +121,12 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
             : a.direction_id != null
               ? `/line/${encodeURIComponent(a.route_id)}?dir=${a.direction_id}`
               : `/line/${encodeURIComponent(a.route_id)}`;
-          // La campanella non serve se il bus arriva in meno di 3 minuti:
-          // sotto quella soglia non c'è tempo materiale per ricevere la notifica
-          // e muoversi verso la fermata. La finestra del worker è 5 minuti,
-          // quindi 3 min da qui dà comunque un tick di margine.
+          // La campanella sparisce quando restano 3 minuti o meno: sotto quella
+          // soglia la notifica arriverebbe quando il bus è già a 2 minuti (il
+          // worker ha fino a 60s di latenza, e `now` si aggiorna ogni 15s).
+          // La soglia è > 3, cioè visibile da 4 minuti in su.
           const minsLeft = minutesUntil(a.eta_ts, now);
-          const bellUtile = a.trip_id != null && minsLeft >= 3;
+          const bellUtile = a.trip_id != null && minsLeft > 3;
           return (
             <li key={`${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`} className="flex items-center">
               <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
