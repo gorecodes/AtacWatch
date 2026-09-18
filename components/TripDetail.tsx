@@ -10,6 +10,7 @@ import { routeTypeInfo } from "@/lib/gtfs";
 import { usePolling } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
 import { LiveBeacon } from "./Glyphs";
+import BellButton from "./BellButton";
 import HeaderActions from "./HeaderActions";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
@@ -37,7 +38,14 @@ function minutesTo(iso: string | null): number | null {
   return Math.round((new Date(iso).getTime() - Date.now()) / 60000);
 }
 
-export default function TripDetail({ tripId }: { tripId: string }) {
+export default function TripDetail({
+  tripId,
+  stopId = null,
+}: {
+  tripId: string;
+  /** La fermata da cui si è arrivati: è lì che l'utente aspetta. */
+  stopId?: string | null;
+}) {
   const [route, setRoute] = useState<Route | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle>(null);
   const [stops, setStops] = useState<TripStop[]>([]);
@@ -68,6 +76,10 @@ export default function TripDetail({ tripId }: { tripId: string }) {
   // in trip_updates è solo un fallback (può essere intermedia).
   const destination = headsign ?? (stops.length ? stops[stops.length - 1].name : null);
   const nextIdx = stops.findIndex((s) => (minutesTo(s.eta_ts) ?? -1) >= 0);
+
+  // La fermata da cui si è arrivati, se la corsa ci passa ancora: è l'unica
+  // per cui offrire la notifica, perché è dove l'utente sta aspettando.
+  const fermataAttesa = stopId ? stops.find((s) => s.stop_id === stopId) ?? null : null;
 
   return (
     <div className="mx-auto max-w-lg">
@@ -108,6 +120,24 @@ export default function TripDetail({ tripId }: { tripId: string }) {
             stops={stops}
             vehicles={vehicle ? [vehicle] : []}
             color={route?.color}
+          />
+        </div>
+      )}
+
+      {/* LA NOTIFICA STA QUI, non sulle righe della lista arrivi.
+          Sulla pagina fermata il campanello occupava 44px su ogni riga per
+          un'azione che si fa raramente, e insieme al triangolo degli avvisi
+          la riga era troppo densa. Qui è UNO, scritto, e dice a quale fermata
+          si riferisce — un glifo da venti pixel non si notava affatto.
+          Non uno per fermata della corsa: sposterebbe il problema. */}
+      {fermataAttesa && fermataAttesa.eta_ts && (minutesTo(fermataAttesa.eta_ts) ?? -1) > 3 && (
+        <div className="px-4 pt-3">
+          <BellButton
+            stopId={fermataAttesa.stop_id}
+            tripId={tripId}
+            routeShortName={route?.short_name ?? ""}
+            headsign={headsign ?? null}
+            etichetta={fermataAttesa.name}
           />
         </div>
       )}

@@ -3,14 +3,13 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import type { Arrival } from "@/lib/gtfs";
-import { minutesUntil } from "@/lib/gtfs";
+
 import { usePolling, useNow } from "@/lib/usePolling";
 import { useFavorites } from "@/lib/favorites";
 import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
 import { StarGlyph, AlertGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
-import BellButton from "./BellButton";
 import { useAvvisi, avvisiPerLinea } from "@/lib/useAvvisi";
 import HeaderActions from "./HeaderActions";
 import Skeleton from "./Skeleton";
@@ -110,17 +109,13 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
 
       <ul className="divide-y divide-neutral-200 px-4">
         {arrivals.map((a, i) => {
+          // `?stop=` serve alla pagina della corsa per sapere a quale fermata
+          // offrire la notifica: è lì che sta il campanello adesso.
           const href = a.trip_id
-            ? `/trip/${encodeURIComponent(a.trip_id)}`
+            ? `/trip/${encodeURIComponent(a.trip_id)}?stop=${encodeURIComponent(stopId)}`
             : a.direction_id != null
               ? `/line/${encodeURIComponent(a.route_id)}?dir=${a.direction_id}`
               : `/line/${encodeURIComponent(a.route_id)}`;
-          // La campanella sparisce quando restano 3 minuti o meno: sotto quella
-          // soglia la notifica arriverebbe quando il bus è già a 2 minuti (il
-          // worker ha fino a 60s di latenza, e `now` si aggiorna ogni 15s).
-          // La soglia è > 3, cioè visibile da 4 minuti in su.
-          const minsLeft = minutesUntil(a.eta_ts, now);
-          const bellUtile = a.trip_id != null && minsLeft > 3;
 
           // L'avviso sta sulla RIGA della linea, non in un riquadro in cima:
           // così non serve dire a quale linea si riferisce, si vede. E niente
@@ -173,14 +168,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                   <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
                 </Link>
 
-                {bellUtile && (
-                  <BellButton
-                    stopId={stopId}
-                    tripId={a.trip_id!}
-                    routeShortName={a.short_name}
-                    headsign={a.headsign ?? null}
-                  />
-                )}
               </div>
 
               {avvisoAperto && suoiAvvisi && (
