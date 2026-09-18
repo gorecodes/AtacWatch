@@ -39,6 +39,16 @@ export type Avviso = {
   urgente: boolean;
   /** Formato "fino al 31 ottobre" o "oggi", per dirlo senza far contare i giorni. */
   quando: string | null;
+  /**
+   * Inizio della validità, per ordinare l'elenco dal più recente.
+   *
+   * È il meglio che abbiamo come "data di uscita": ATAC non pubblica una data
+   * di emissione, e `updated_at` non serve perché replace_service_alerts fa
+   * delete+insert a ogni tick del worker, quindi vale sempre "un minuto fa".
+   */
+  inizio: string | null;
+  /** L'avviso è già in corso, non parte in un giorno futuro. */
+  inCorso: boolean;
   linee: string[];
   /**
    * Le linee coinvolte con il nome che conosce la gente ("60", non il
@@ -81,7 +91,7 @@ export function pulisci(testo: string | null): string {
     testo
       // Forma letterale: i sei caratteri 
       .replace(/\\u00([89][0-9a-f])/gi, (m, hex) => CP1252[parseInt(hex, 16)] ?? m)
-      // Forma vera: il codepoint di controllo C1
+      // Forma vera: il carattere di controllo C1 (U+0080 a U+009F).
       .replace(/[-]/g, (c) => CP1252[c.charCodeAt(0)] ?? "")
       // ATAC scrive tutto in maiuscolo su molti avvisi: lasciato com'è,
       // perché riscriverlo a mano sbaglierebbe i nomi propri.
@@ -181,8 +191,38 @@ export function normalizza(r: AvvisoRaw, adesso: Date = new Date()): Avviso | nu
     causa: CAUSE[r.cause ?? ""] ?? null,
     urgente,
     quando,
+    inizio: r.start_ts ?? null,
+    inCorso: !inizio || inizio <= adesso,
     linee: r.route_ids ?? [],
     lineeQui: r.linee_qui ?? [],
     toccaQui: r.tocca_qui === true,
   };
+}
+
+/**
+ * Ordine dell'elenco. Sta qui e non dentro la route perché è una regola di
+ * presentazione con quattro criteri motivati, e nella route non si poteva
+ * verificare senza riscriverla in un test — cioè senza verificare nulla.
+ */
+export function confrontaAvvisi(a: Avviso, b: Avviso): number {
+  // 1) Gli urgenti sempre sopra: è l'unica gerarchia che conta davvero.
+  if (a.urgente !== b.urgente) return a.urgente ? -1 : 1;
+
+  // 2) Quello che sta succedendo prima di quello che succederà. Una
+  //    manifestazione che parte domani messa sopra una in corso adesso
+  //    sarebbe un ordine giusto in teoria e sbagliato per chi deve uscire.
+  if (a.inCorso !== b.inCorso) return a.inCorso ? -1 : 1;
+
+  // 3) Poi dal più recente, che è il più vicino a un "ordine di uscita" che
+  //    possiamo dare: ATAC non pubblica una data di emissione, e updated_at
+  //    non serve perché replace_service_alerts fa delete+insert a ogni tick
+  //    del worker, quindi vale sempre "un minuto fa". L'inizio della validità
+  //    è il miglior sostituto disponibile.
+  const ta = a.inizio ? Date.parse(a.inizio) : 0;
+  const tb = b.inizio ? Date.parse(b.inizio) : 0;
+  if (ta !== tb) return tb - ta;
+
+  // 4) A parità, il titolo: rende l'ordine stabile tra una ricarica e
+  //    l'altra, così la lista non balla sotto gli occhi.
+  return a.titolo.localeCompare(b.titolo);
 }

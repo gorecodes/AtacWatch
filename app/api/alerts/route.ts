@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
-import { normalizza, type AvvisoRaw, type Avviso } from "@/lib/avvisi";
+import { normalizza, confrontaAvvisi, type AvvisoRaw, type Avviso } from "@/lib/avvisi";
 
 /**
  * Avvisi di servizio ATAC, filtrabili per linea o per fermata.
@@ -76,12 +76,11 @@ export async function GET(req: Request) {
 
     // La normalizzazione scarta gli avvisi scaduti e quelli troppo in là nel
     // futuro, quindi il conteggio va fatto DOPO.
+    const adesso = new Date();
     const avvisi = righe
-      .map((r) => normalizza(r))
+      .map((r) => normalizza(r, adesso))
       .filter((a): a is Avviso => a !== null)
-      // Prima gli urgenti, poi per titolo così l'ordine è stabile tra le
-      // ricariche e la lista non balla sotto gli occhi.
-      .sort((a, b) => (a.urgente === b.urgente ? a.titolo.localeCompare(b.titolo) : a.urgente ? -1 : 1));
+      .sort(confrontaAvvisi);
 
     return NextResponse.json(
       { avvisi, urgenti: avvisi.filter((a) => a.urgente).length },
