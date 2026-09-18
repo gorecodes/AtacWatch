@@ -8,6 +8,7 @@ import type { Route } from "@/lib/gtfs";
 import { routeTypeInfo, routeName, minutesUntil } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import RouteBadge from "./RouteBadge";
+import Avvisi from "./Avvisi";
 import { ChevronGlyph, LiveDot, LiveBeacon } from "./Glyphs";
 import HeaderActions from "./HeaderActions";
 
@@ -250,6 +251,13 @@ export default function LineDetail({ routeId, initialDir = null }: { routeId: st
           </div>
         </div>
       </header>
+
+      {/* Avvisi della linea, tutti: qui l'utente sta guardando proprio questa
+          linea, quindi anche il cantiere che dura mesi è informazione
+          pertinente — ed è già reso in tono basso e richiudibile. */}
+      <div className="px-4 pt-3">
+        <Avvisi routeId={routeId} />
+      </div>
 
       {/* I due versi. Prima erano pill a una riga con `truncate`, e i capolinea
           romani non ci entravano mai ("→ P.ZA STAZIONE S. PIET…"): ora vanno a

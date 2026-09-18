@@ -11,6 +11,7 @@ import Eta from "./Eta";
 import { StarGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
 import BellButton from "./BellButton";
+import Avvisi from "./Avvisi";
 import HeaderActions from "./HeaderActions";
 import Skeleton from "./Skeleton";
 
@@ -79,6 +80,16 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           <p className="mt-0.5 text-[13px] tabular-nums text-neutral-500">palina {stop.code}</p>
         )}
       </header>
+
+      {/* Avvisi PRIMA della lista degli arrivi: un orario di arrivo per una
+          linea deviata è un'informazione sbagliata, e scoprirlo dopo aver
+          letto gli orari è troppo tardi.
+          Solo gli urgenti: il collegamento fermata→avviso è dedotto dalle
+          linee che ci passano, e su un nodo affollato i cantieri di dieci
+          linee sarebbero rumore. */}
+      <div className="px-4 pt-2">
+        <Avvisi stopId={stopId} soloUrgenti />
+      </div>
 
       {/* La legenda una volta sola, invece di ripetere "tempo reale" /
           "orario programmato" su ogni riga: quella seconda riga raddoppiava
