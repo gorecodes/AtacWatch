@@ -40,18 +40,11 @@ export default function BellButton({
   tripId,
   routeShortName,
   headsign,
-  etichetta,
 }: {
   stopId: string;
   tripId: string;
   routeShortName: string;
   headsign: string | null;
-  /**
-   * Nome della fermata: se c'è, il tasto diventa largo e scritto invece di un
-   * glifo solo. Serve sulla pagina della corsa, dove il tasto è uno e deve
-   * dire cosa fa — un campanello di venti pixel nessuno lo notava.
-   */
-  etichetta?: string;
 }) {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -123,27 +116,6 @@ export default function BellButton({
   // Nasconde il pulsante se il browser non supporta le push (o se non c'è VAPID)
   if (!VAPID_PUBLIC_KEY || typeof window === "undefined") return null;
   if (!("PushManager" in window)) return null;
-
-  if (etichetta) {
-    return (
-      <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(); }}
-        aria-pressed={subscribed}
-        disabled={loading}
-        className={`flex w-full items-center justify-center gap-2 rounded border py-2.5 text-[14px] font-semibold transition-colors ${
-          subscribed
-            ? "border-brand-200 bg-brand-50 text-brand-600"
-            : "border-neutral-300 bg-neutral-50 text-neutral-700 active:bg-neutral-200/60"
-        } ${loading ? "opacity-40" : ""}`}
-      >
-        <BellGlyph filled={subscribed} className="h-[18px] w-[18px] shrink-0" />
-        <span className="min-w-0 truncate">
-          {subscribed ? "Ti avviso a " : "Avvisami a "}
-          <span className="name">{etichetta}</span>
-        </span>
-      </button>
-    );
-  }
 
   return (
     <button

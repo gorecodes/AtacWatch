@@ -3,13 +3,14 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import type { Arrival } from "@/lib/gtfs";
-
+import { minutesUntil } from "@/lib/gtfs";
 import { usePolling, useNow } from "@/lib/usePolling";
 import { useFavorites } from "@/lib/favorites";
 import RouteBadge from "./RouteBadge";
 import Eta from "./Eta";
 import { StarGlyph, AlertGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
+import BellButton from "./BellButton";
 import { useAvvisi, avvisiPerLinea } from "@/lib/useAvvisi";
 import HeaderActions from "./HeaderActions";
 import Skeleton from "./Skeleton";
@@ -27,7 +28,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
   // Avvisi della fermata, indicizzati per nome di linea: servono a marcare le
   // righe, non a riempire un riquadro.
   const perLinea = avvisiPerLinea(useAvvisi({ stopId }));
-  const [apertoId, setApertoId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -109,10 +109,8 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
 
       <ul className="divide-y divide-neutral-200 px-4">
         {arrivals.map((a, i) => {
-          // `?stop=` serve alla pagina della corsa per sapere a quale fermata
-          // offrire la notifica: è lì che sta il campanello adesso.
           const href = a.trip_id
-            ? `/trip/${encodeURIComponent(a.trip_id)}?stop=${encodeURIComponent(stopId)}`
+            ? `/trip/${encodeURIComponent(a.trip_id)}`
             : a.direction_id != null
               ? `/line/${encodeURIComponent(a.route_id)}?dir=${a.direction_id}`
               : `/line/${encodeURIComponent(a.route_id)}`;
@@ -122,45 +120,31 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           // banda di colore prima del dato per cui l'utente ha aperto l'app.
           const suoiAvvisi = perLinea.get(a.short_name);
           const chiave = `${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`;
-          const avvisoAperto = apertoId === chiave;
+
+          // La campanella sparisce sotto i 3 minuti: la notifica arriverebbe
+          // quando il bus è già a 2 (il worker ha fino a 60s di latenza, e
+          // `now` si aggiorna ogni 15s).
+          const bellUtile = a.trip_id != null && minutesUntil(a.eta_ts, now) > 3;
 
           return (
-            // Il colore della riga lo usiamo SOLO quando l'avviso è aperto:
-            // dice quale riga stai leggendo, e sparisce appena chiudi. Tingere
-            // stabilmente le righe con avviso invece andava addosso al colore
-            // dell'ETA, che distingue il tracciato dal previsto ed è il dato
-            // più importante della lista.
-            <li
-              key={chiave}
-              className={avvisoAperto ? "-mx-2 rounded bg-warn-50 px-2" : undefined}
-            >
-              {/* Il triangolo sta a SINISTRA, subito dopo il numero della
-                  linea. Prima era a destra accanto alla campanella: due
-                  bersagli da tocco adiacenti sono il modo di far sbagliare il
-                  dito, e la riga sembrava piena. Ai due capi opposti si
-                  toccano senza pensarci, e accanto al numero è anche il posto
-                  logico — l'avviso riguarda quella linea.
-                  Due Link allo stesso indirizzo perché il triangolo in mezzo
-                  è interattivo e non può stare dentro un'ancora. */}
+            <li key={chiave}>
+              {/* IL TRIANGOLO NON È UN TASTO, ed è il punto.
+                  Prima era un terzo bersaglio da toccare accanto alla riga e
+                  alla campanella, e la riga risultava affollata. Ora è un
+                  segno DENTRO il link: dice "questa linea ha un problema
+                  oggi", e toccarlo fa quello che fa il resto della riga, cioè
+                  aprire la corsa — dove il testo dell'avviso si legge per
+                  esteso. I bersagli da toccare restano due, come da sempre:
+                  la riga e la campanella. */}
               <div className="flex items-center">
-                <Link href={href} className="shrink-0 py-2.5 pr-2.5 active:opacity-60">
+                <Link
+                  href={href}
+                  className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40"
+                >
                   <RouteBadge shortName={a.short_name} color={a.color} textColor={a.text_color} />
-                </Link>
 
-                {suoiAvvisi && (
-                  <button
-                    onClick={() => setApertoId(avvisoAperto ? null : chiave)}
-                    aria-expanded={avvisoAperto}
-                    aria-label={`Avviso di servizio sulla linea ${a.short_name}`}
-                    className={`-ml-1 flex h-11 w-7 shrink-0 items-center justify-center ${
-                      avvisoAperto ? "text-warn-700" : "text-warn-600"
-                    }`}
-                  >
-                    <AlertGlyph className="h-[15px] w-[15px]" />
-                  </button>
-                )}
+                  {suoiAvvisi && <AlertGlyph className="h-[15px] w-[15px] shrink-0 text-warn-600" />}
 
-                <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
                   <span className="name min-w-0 flex-1 truncate text-[15px] leading-snug text-neutral-900">
                     {a.headsign ?? "Destinazione non indicata"}
                   </span>
@@ -168,34 +152,19 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
                   <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
                 </Link>
 
+                {/* La campanella TORNA sulla riga. Spostarla sulla pagina
+                    della corsa aveva ripulito la lista ma reso la funzione
+                    irraggiungibile: stando alla fermata a guardare gli arrivi,
+                    niente segnalava più che si potesse chiedere un avviso. */}
+                {bellUtile && (
+                  <BellButton
+                    stopId={stopId}
+                    tripId={a.trip_id!}
+                    routeShortName={a.short_name}
+                    headsign={a.headsign ?? null}
+                  />
+                )}
               </div>
-
-              {avvisoAperto && suoiAvvisi && (
-                <div className="pb-2.5 pr-2">
-                  {suoiAvvisi.map((av) => (
-                    <div key={av.id} className="border-l-2 border-warn-400 pl-2.5">
-                      <p className="text-[12px] font-semibold leading-snug text-warn-700">
-                        {/* Stesso scrupolo del riquadro: sappiamo che la linea è
-                            coinvolta, non che lo sia questa fermata, tranne nei
-                            3 avvisi su 181 in cui ATAC dichiara gli stop_ids. */}
-                        {av.toccaQui
-                          ? `${av.effetto} qui`
-                          : `${av.effetto} su un tratto del percorso`}
-                        {av.causa && ` · ${av.causa}`}
-                        {av.quando && ` · ${av.quando}`}
-                      </p>
-                      <p className="mt-0.5 text-[12px] leading-relaxed text-neutral-600">
-                        {av.titolo}
-                      </p>
-                      {av.dettaglio && (
-                        <p className="mt-0.5 text-[12px] leading-relaxed text-neutral-500">
-                          {av.dettaglio}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
             </li>
           );
         })}
