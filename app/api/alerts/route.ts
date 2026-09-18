@@ -51,7 +51,14 @@ export async function GET(req: Request) {
                   from route_stops rs
                   join routes r on r.route_id = rs.route_id
                  where rs.stop_id = ${stop}
-                   and rs.route_id = any(a.route_ids)) as linee_qui
+                   and rs.route_id = any(a.route_ids)) as linee_qui,
+               -- Certezza che la deviazione tocchi QUESTA fermata: ce l'abbiamo
+               -- solo quando ATAC dichiara gli stop_ids, cioè in 3 avvisi su
+               -- 181. Negli altri casi sappiamo che la linea è deviata da
+               -- qualche parte sul percorso, e le parole in pagina devono
+               -- dirlo così: una linea lunga venti chilometri deviata in
+               -- centro passa regolarmente in periferia.
+               (${stop} = any(a.stop_ids)) as tocca_qui
           from service_alerts a
          where exists (
                  select 1 from route_stops rs

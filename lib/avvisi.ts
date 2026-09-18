@@ -26,6 +26,8 @@ export type AvvisoRaw = {
   end_ts: string | null;
   /** Solo per ?stop=: le linee dell'avviso che fermano davvero lì. */
   linee_qui?: string[] | null;
+  /** Solo per ?stop=: ATAC dichiara questa fermata tra quelle coinvolte. */
+  tocca_qui?: boolean | null;
 };
 
 export type Avviso = {
@@ -45,6 +47,12 @@ export type Avviso = {
    * "deviata per manifestazione" senza sapere deviata chi.
    */
   lineeQui: string[];
+  /**
+   * ATAC dichiara esplicitamente che questa fermata è coinvolta. Vero in 3
+   * avvisi su 181: quando è falso NON vuol dire che la fermata sia salva, vuol
+   * dire che non lo sappiamo, e le parole in pagina cambiano di conseguenza.
+   */
+  toccaQui: boolean;
 };
 
 /**
@@ -175,5 +183,6 @@ export function normalizza(r: AvvisoRaw, adesso: Date = new Date()): Avviso | nu
     quando,
     linee: r.route_ids ?? [],
     lineeQui: r.linee_qui ?? [],
+    toccaQui: r.tocca_qui === true,
   };
 }

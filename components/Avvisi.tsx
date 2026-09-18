@@ -18,6 +18,24 @@ import type { Avviso } from "@/lib/avvisi";
  * l'avviso di Piazza Venezia riguarda 12 linee, ma a una fermata servita
  * dalla sola 60 va scritto "60".
  */
+/**
+ * Da "Deviata" a "una deviazione", perché la frase diventa "la 51 con una
+ * deviazione sul percorso": afferma che il disservizio esiste sulla linea,
+ * non che sia a questa fermata.
+ */
+function etichettaIndiretta(effetto: string): string {
+  switch (effetto) {
+    case "Deviata":            return "una deviazione";
+    case "Percorso modificato": return "il percorso modificato";
+    case "Servizio sospeso":   return "tratte sospese";
+    case "Servizio ridotto":   return "servizio ridotto";
+    case "Forti ritardi":      return "forti ritardi";
+    case "Fermata spostata":   return "una fermata spostata";
+    case "Corse aggiuntive":   return "corse aggiuntive";
+    default:                   return "un avviso";
+  }
+}
+
 export default function Avvisi({
   routeId,
   stopId,
@@ -79,8 +97,18 @@ export default function Avvisi({
                   </span>
                 )}
                 <span className={a.urgente ? "text-amber-700" : "text-neutral-500"}>
-                  {linee.length > 0 ? a.effetto.toLowerCase() : a.effetto}
-                  {a.causa && ` per ${a.causa}`}
+                  {/* LE PAROLE CONTANO. Sulla fermata sappiamo che la linea è
+                      deviata da qualche parte, non che lo sia QUI: ATAC
+                      dichiara le fermate coinvolte in 3 avvisi su 181. Dire
+                      "51 deviata" a una fermata a venti chilometri dal
+                      cantiere è falso, quindi lì si dice che la linea HA una
+                      deviazione, e solo con toccaQui si afferma che riguarda
+                      questa fermata. */}
+                  {linee.length === 0
+                    ? `${a.effetto}${a.causa ? ` per ${a.causa}` : ""}`
+                    : a.toccaQui
+                      ? `${a.effetto.toLowerCase()} qui${a.causa ? ` per ${a.causa}` : ""}`
+                      : `con ${etichettaIndiretta(a.effetto)}${a.causa ? ` per ${a.causa}` : ""} sul percorso`}
                   {a.quando && ` · ${a.quando}`}
                 </span>
               </span>
