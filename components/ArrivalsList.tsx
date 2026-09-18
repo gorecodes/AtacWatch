@@ -11,7 +11,8 @@ import Eta from "./Eta";
 import { StarGlyph } from "./Glyphs";
 import BackButton from "./BackButton";
 import BellButton from "./BellButton";
-import Avvisi from "./Avvisi";
+import { AlertGlyph } from "./Glyphs";
+import { useAvvisi, avvisiPerLinea } from "@/lib/useAvvisi";
 import HeaderActions from "./HeaderActions";
 import Skeleton from "./Skeleton";
 
@@ -25,6 +26,10 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
   const [error, setError] = useState(false);
   const { isFavorite, toggle } = useFavorites();
   const now = useNow(15000);
+  // Avvisi della fermata, indicizzati per nome di linea: servono a marcare le
+  // righe, non a riempire un riquadro.
+  const perLinea = avvisiPerLinea(useAvvisi({ stopId }));
+  const [apertoId, setApertoId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -81,16 +86,6 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
         )}
       </header>
 
-      {/* Avvisi PRIMA della lista degli arrivi: un orario di arrivo per una
-          linea deviata è un'informazione sbagliata, e scoprirlo dopo aver
-          letto gli orari è troppo tardi.
-          Solo gli urgenti: il collegamento fermata→avviso è dedotto dalle
-          linee che ci passano, e su un nodo affollato i cantieri di dieci
-          linee sarebbero rumore. */}
-      <div className="px-4 pt-1.5">
-        <Avvisi stopId={stopId} soloUrgenti />
-      </div>
-
       {/* La legenda una volta sola, invece di ripetere "tempo reale" /
           "orario programmato" su ogni riga: quella seconda riga raddoppiava
           l'altezza e dimezzava gli arrivi visibili. */}
@@ -127,25 +122,74 @@ export default function ArrivalsList({ stopId }: { stopId: string }) {
           // La soglia è > 3, cioè visibile da 4 minuti in su.
           const minsLeft = minutesUntil(a.eta_ts, now);
           const bellUtile = a.trip_id != null && minsLeft > 3;
+
+          // L'avviso sta sulla RIGA della linea, non in un riquadro in cima:
+          // così non serve dire a quale linea si riferisce, si vede. E niente
+          // banda di colore prima del dato per cui l'utente ha aperto l'app.
+          const suoiAvvisi = perLinea.get(a.short_name);
+          const chiave = `${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`;
+          const avvisoAperto = apertoId === chiave;
+
           return (
-            <li key={`${a.route_id}-${a.direction_id}-${a.eta_ts}-${i}`} className="flex items-center">
-              <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
-                <RouteBadge shortName={a.short_name} color={a.color} textColor={a.text_color} />
+            <li key={chiave}>
+              <div className="flex items-center">
+                <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 active:bg-neutral-200/40">
+                  <RouteBadge shortName={a.short_name} color={a.color} textColor={a.text_color} />
 
-                <span className="name min-w-0 flex-1 truncate text-[15px] leading-snug text-neutral-900">
-                  {a.headsign ?? "Destinazione non indicata"}
-                </span>
+                  <span className="name min-w-0 flex-1 truncate text-[15px] leading-snug text-neutral-900">
+                    {a.headsign ?? "Destinazione non indicata"}
+                  </span>
 
-                <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
-              </Link>
+                  <Eta etaTs={a.eta_ts} isRealtime={a.is_realtime} now={now} />
+                </Link>
 
-              {bellUtile && (
-                <BellButton
-                  stopId={stopId}
-                  tripId={a.trip_id!}
-                  routeShortName={a.short_name}
-                  headsign={a.headsign ?? null}
-                />
+                {/* Fuori dal Link, altrimenti toccarlo aprirebbe la corsa. */}
+                {suoiAvvisi && (
+                  <button
+                    onClick={() => setApertoId(avvisoAperto ? null : chiave)}
+                    aria-expanded={avvisoAperto}
+                    aria-label={`Avviso di servizio sulla linea ${a.short_name}`}
+                    className="flex h-11 w-8 shrink-0 items-center justify-center text-amber-600 active:text-amber-800"
+                  >
+                    <AlertGlyph className="h-[15px] w-[15px]" />
+                  </button>
+                )}
+
+                {bellUtile && (
+                  <BellButton
+                    stopId={stopId}
+                    tripId={a.trip_id!}
+                    routeShortName={a.short_name}
+                    headsign={a.headsign ?? null}
+                  />
+                )}
+              </div>
+
+              {avvisoAperto && suoiAvvisi && (
+                <div className="pb-2.5 pl-1 pr-2">
+                  {suoiAvvisi.map((av) => (
+                    <div key={av.id} className="border-l-2 border-amber-400 pl-2.5">
+                      <p className="text-[12px] font-semibold leading-snug text-amber-700">
+                        {/* Stesso scrupolo del riquadro: sappiamo che la linea è
+                            coinvolta, non che lo sia questa fermata, tranne nei
+                            3 avvisi su 181 in cui ATAC dichiara gli stop_ids. */}
+                        {av.toccaQui
+                          ? `${av.effetto} qui`
+                          : `${av.effetto} su un tratto del percorso`}
+                        {av.causa && ` · ${av.causa}`}
+                        {av.quando && ` · ${av.quando}`}
+                      </p>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-neutral-600">
+                        {av.titolo}
+                      </p>
+                      {av.dettaglio && (
+                        <p className="mt-0.5 text-[12px] leading-relaxed text-neutral-500">
+                          {av.dettaglio}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </li>
           );
