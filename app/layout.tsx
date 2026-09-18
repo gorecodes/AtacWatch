@@ -72,7 +72,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             Dati di Roma Servizi per la Mobilità (ATAC, Roma TPL), licenza CC-BY-SA.
             Gli orari in tempo reale dipendono dal feed ATAC e possono mancare.
           </p>
-          <p className="mt-2">
+          <p className="mt-2 flex items-center gap-3">
             <a
               href="https://ko-fi.com/codingpao"
               target="_blank"
@@ -80,6 +80,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               className="text-neutral-500 underline underline-offset-2 active:text-neutral-900"
             >
               Offrimi un caffè
+            </a>
+            {/* L'informativa deve essere raggiungibile da ogni pagina: il footer
+                è nel layout, quindi qui lo è per costruzione. */}
+            <a
+              href="/privacy"
+              className="text-neutral-500 underline underline-offset-2 active:text-neutral-900"
+            >
+              Privacy
             </a>
           </p>
         </footer>

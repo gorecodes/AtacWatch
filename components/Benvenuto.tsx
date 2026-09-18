@@ -55,6 +55,17 @@ export default function Benvenuto() {
           Gli orari sono quelli di ATAC: in verde quando un mezzo è tracciato davvero, in grigio
           quando è solo previsto. Del resto non rispondiamo noi.
         </li>
+        {/* L'informativa al primo avvio, dove serve: non è un consenso da
+            strappare — non c'è nulla da consentire — è il momento giusto per
+            dire che non tracciamo, che è l'unica cosa che interessa sapere. */}
+        <li>
+          Nessun cookie, nessun tracciamento, nessun account: preferiti e
+          cronologia restano sul tuo telefono.{" "}
+          <a href="/privacy" className="underline underline-offset-2 hover:text-neutral-900">
+            Come funziona
+          </a>
+          .
+        </li>
       </ul>
     </div>
   );
