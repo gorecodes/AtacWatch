@@ -239,6 +239,11 @@ export async function ingestStatic(opts: {
     await sql.begin(async (tx) => {
       await tx`set local statement_timeout = 0`;
       await tx`select rebuild_static_from_staging()`;
+      // POI si ricostruisce stop_schedule con le regole giuste (0029):
+      // il rebuild grande la riempie ancora prendendo OGNI passaggio, compresi
+      // gli arrivi a fine corsa e i rientri in rimessa, che partenze non sono.
+      // Rifarla qui costa pochi secondi e tiene la regola in un posto solo.
+      await tx`select rebuild_stop_schedule()`;
     });
 
     // Traccia dell'ETL, accanto a quelle che il worker scrive per i feed in
