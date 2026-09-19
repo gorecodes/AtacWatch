@@ -115,3 +115,19 @@ pnpm dev   # http://localhost:3000
 > tramite il componente `RouteMap` + endpoint `/api/vehicles`. L'infrastruttura
 > lato API (`vehicles_in_bbox`, `/api/vehicles`) è mantenuta in caso si voglia
 > reintrodurre la pagina in futuro.
+
+## Licenze
+
+Il codice è sotto **licenza MIT** ([LICENSE](LICENSE)).
+
+Non tutto il contenuto è nostro, e il resto conserva la sua licenza:
+
+- il carattere **Barlow** (e Barlow Semi Condensed) è sotto SIL Open Font
+  License, servito da Google Fonts tramite `next/font`;
+- i dati delle mappe sono © contributori **OpenStreetMap**, sotto ODbL;
+- il motore di mappa è **MapLibre GL JS**, BSD a tre clausole;
+- i dati di trasporto vengono dal feed pubblico di **ATAC / Roma Mobilità**.
+
+L'app Android che consuma queste API sta in
+[gorecodes/busroma-android](https://github.com/gorecodes/busroma-android), anche
+lei sotto licenza MIT.
