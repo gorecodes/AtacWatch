@@ -5,8 +5,27 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_DIR"
 
-echo "[deploy] $(date -u +%Y-%m-%dT%H:%M:%SZ) — pull..."
-git pull
+# ALLINEAMENTO A origin/main, NON `git pull`.
+#
+# `git pull` fa fetch + merge, e il merge fallisce se qualcuno ha toccato un
+# file tracciato sul server. Con `set -euo pipefail` il deploy muore qui, il
+# repository resta al commit di prima, e — questa è la parte cattiva — ogni
+# push successivo riparte dallo stesso stato e rifallisce. Anche il push che
+# contiene la CORREZIONE. Il meccanismo si inceppa esattamente quando serve.
+#
+# È successo: un commit ha lasciato Caddy in crash loop, il deploy è uscito
+# in errore alla verifica finale, e i due push che riparavano non sono mai
+# arrivati sulla macchina. Si è dovuto rimettere tutto a mano.
+#
+# `fetch` + `reset --hard` non può fallire per modifiche locali: butta via
+# quello che c'è e mette esattamente ciò che sta su origin/main. È la cosa
+# giusta per una macchina di deploy, dove la verità sta nel repository e non
+# nel filesystem. Quello che deve sopravvivere — certificati, blocchi TLS dei
+# siti — sta apposta fuori dalla cartella del repository, in /etc/busroma.
+echo "[deploy] $(date -u +%Y-%m-%dT%H:%M:%SZ) — allineamento a origin/main..."
+git fetch --prune origin
+git reset --hard origin/main
+echo "[deploy] ora su: $(git log --oneline -1)"
 
 # Il worker si ferma durante il build: libera memoria su una macchina da 4GB, e
 # nel frattempo perde solo qualche minuto di aggiornamenti in tempo reale.
