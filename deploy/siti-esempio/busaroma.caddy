@@ -1,0 +1,13 @@
+# ESEMPIO — questo file NON viene letto da Caddy.
+#
+# Va copiato sul VPS in /etc/busroma/siti/busaroma.caddy, insieme ai
+# certificati in /etc/busroma/certs/. Sta qui solo perche' il contenuto resti
+# versionato e non vada ricostruito a memoria fra un anno.
+https://busaroma.it, https://www.busaroma.it {
+	tls /etc/caddy/certs/busaroma.pem /etc/caddy/certs/busaroma.key
+	import comune
+}
+
+http://busaroma.it, http://www.busaroma.it {
+	redir https://{host}{uri} permanent
+}

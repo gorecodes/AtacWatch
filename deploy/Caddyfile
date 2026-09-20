@@ -1,19 +1,24 @@
-# TLS verso Cloudflare: la 443 con un certificato della CA di origine.
+# Cloudflare sta davanti. Qui dentro ci sono due cose:
+#   - la 80, che serve tutto e funziona da sempre;
+#   - i siti in TLS sulla 443, che vivono in file a parte e compaiono solo
+#     quando sul VPS ci sono i loro certificati.
 #
-# PERCHE' NON LET'S ENCRYPT. Caddy saprebbe prendersi un certificato da solo,
-# ma non qui: l'NSG di Azure lascia entrare solo gli indirizzi di Cloudflare,
-# quindi la validazione HTTP-01 di Let's Encrypt non arriverebbe mai
-# all'origine. Il certificato di origine di Cloudflare risolve il problema
-# alla radice - lo firma una CA che vale SOLO fra Cloudflare e noi, dura
-# quindici anni e non va rinnovato.
-#
-# Per questo `auto_https off`: senza, Caddy tenterebbe di prendere
-# certificati veri a ogni avvio, fallirebbe, e riproverebbe per sempre.
+# QUESTA DIVISIONE NON E' ESTETICA. Un blocco `tls` che punta a un file
+# inesistente impedisce a Caddy di partire, e Caddy che non parte vuol dire
+# sito giu'. Mettendo quel blocco in /etc/busroma/siti, che il webhook non
+# tocca perche' sta fuori dal repository, il deploy resta sicuro in ogni
+# momento: se i certificati non ci sono, il file non c'e', e la glob vuota
+# per Caddy non e' un errore ("an empty glob pattern is not an error").
 {
+	# Niente certificati automatici. Caddy saprebbe prenderseli da Let's
+	# Encrypt, ma non qui: l'NSG di Azure lascia entrare solo gli indirizzi
+	# di Cloudflare, quindi la validazione HTTP-01 non arriverebbe mai
+	# all'origine. Si usano i certificati Origin CA di Cloudflare, che valgono
+	# solo fra Cloudflare e noi e durano quindici anni.
 	auto_https off
 }
 
-# Il pezzo comune ai siti: l'app, e il webhook di deploy che gira sull'host.
+# Il pezzo comune: l'app, e il webhook di deploy che gira sull'host.
 (comune) {
 	handle /hooks/* {
 		reverse_proxy host.docker.internal:9000
@@ -21,32 +26,10 @@
 	reverse_proxy app:3000
 }
 
-# busaroma.it in HTTPS, per poter mettere Cloudflare su Full (strict).
-#
-# Il certificato e la chiave stanno in /etc/busroma/certs SULL'HOST, fuori
-# dalla cartella del progetto: il webhook fa git pull e reset, e una chiave
-# privata dentro un repository e' una chiave che prima o poi finisce in un
-# commit.
-https://busaroma.it, https://www.busaroma.it {
-	tls /etc/caddy/certs/busaroma.pem /etc/caddy/certs/busaroma.key
-	import comune
-}
-
-# Chi arriva in chiaro viene mandato su HTTPS. Vale anche per la 80 di
-# busaroma.it, che dopo il passaggio a strict non dovrebbe piu' ricevere
-# niente da Cloudflare ma non deve morire in silenzio se succede.
-http://busaroma.it, http://www.busaroma.it {
-	redir https://{host}{uri} permanent
-}
-
-# TUTTO IL RESTO SULLA 80, COME PRIMA.
-#
-# bus.disagio.dev continua a funzionare esattamente come adesso, senza
-# toccare niente: quella zona e' su Flexible (si vede dal fatto che l'origine
-# ascolta solo sulla 80 e il sito risponde), e le app gia' installate puntano
-# li'. Quando anche quel dominio avra' il suo certificato di origine gli si
-# dara' un blocco https come sopra, e allora si potra' passare a strict pure
-# quella zona.
+# La 80, come e' sempre stata. bus.disagio.dev passa di qui e non si muove.
 :80 {
 	import comune
 }
+
+# I siti in TLS, se ci sono. Vedi OPERATIONS.md §7 per come aggiungerne uno.
+import /etc/caddy/siti/*.caddy

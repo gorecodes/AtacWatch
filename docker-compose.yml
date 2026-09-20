@@ -96,10 +96,14 @@ services:
       - "443:443"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      # Certificati di origine, SULL'HOST e non nel repository: il webhook fa
-      # git pull e reset, e una chiave privata versionata è una chiave che
-      # prima o poi finisce in un commit.
+      # Certificati di origine e blocchi dei siti in TLS, SULL'HOST e non nel
+      # repository. Due ragioni: il webhook fa git pull e reset, e una chiave
+      # privata versionata è una chiave che prima o poi finisce in un commit;
+      # e un blocco `tls` che punta a un certificato mancante impedisce a
+      # Caddy di partire, quindi deve poter comparire solo quando il
+      # certificato c'è davvero.
       - /etc/busroma/certs:/etc/caddy/certs:ro
+      - /etc/busroma/siti:/etc/caddy/siti:ro
       - caddy_data:/data
       - caddy_config:/config
     extra_hosts:
