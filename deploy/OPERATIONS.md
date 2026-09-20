@@ -192,17 +192,25 @@ lettura nel container. Fuori dalla cartella del progetto di proposito — il
 webhook fa `git pull` e `reset`, e una chiave privata versionata è una chiave
 che prima o poi finisce in un commit.
 
-**Come si rifà da zero:**
+**Come si aggiunge un sito in TLS.** Il Caddyfile versionato contiene solo la
+80; i blocchi `https://` stanno in `/etc/busroma/siti/*.caddy` sull'host, e il
+Caddyfile li prende con una glob. È deliberato: un blocco `tls` che punta a un
+certificato mancante impedisce a Caddy di avviarsi, e il webhook fa deploy a
+ogni push. Con la glob, se il certificato non c'è il file non c'è, e
+*«an empty glob pattern is not an error»*.
 
 1. Cloudflare → zona → SSL/TLS → **Origin Server** → *Create Certificate*.
    Hostname `busaroma.it` e `*.busaroma.it`, validità 15 anni. La chiave
    privata la mostra una volta sola.
-2. Sul VPS, salvarli con `sudo tee` in `/etc/busroma/certs/busaroma.pem` e
-   `.key`; chiave a `600`, certificato a `644`.
-3. `git pull` e `docker compose up -d --force-recreate caddy`.
-4. Azure NSG: aprire anche la **443** dai range di Cloudflare
+2. Sul VPS, salvarli in `/etc/busroma/certs/` (chiave `600`, certificato
+   `644`) e copiare il blocco da `deploy/siti-esempio/busaroma.caddy` in
+   `/etc/busroma/siti/busaroma.caddy`.
+3. Validare **prima** di riavviare:
+   `docker run --rm -v /etc/busroma:/etc/busroma:ro -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" -v /etc/busroma/siti:/etc/caddy/siti:ro -v /etc/busroma/certs:/etc/caddy/certs:ro caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile`
+4. `docker compose up -d --force-recreate caddy`
+5. Azure NSG: aprire anche la **443** dai range di Cloudflare
    (<https://www.cloudflare.com/ips/>), come è già fatto per la 80.
-5. Cloudflare → SSL/TLS → **Full (strict)**.
+6. Cloudflare → SSL/TLS → **Full (strict)**.
 
 **Passo successivo, quando si vuole:** *Authenticated Origin Pulls*. Cloudflare
 presenta un certificato client e Caddy rifiuta chiunque non ce l'abbia: a quel
