@@ -170,12 +170,49 @@ L'Action di Fase 5 aggiungerà uno step SSH che esegue automaticamente
 | Sezione | Impostazione | Valore |
 |---|---|---|
 | DNS | Record A per il dominio | IP del VPS, **nuvola arancione** (proxy attivo) |
-| SSL/TLS → Overview | Modalità cifratura | **Full** (non Flexible, non Full Strict) |
+| SSL/TLS → Overview | Modalità cifratura | **Full (strict)** per `busaroma.it` |
 
-**Perché Full e non Full Strict?**
-Caddy serve HTTP puro, senza certificato firmato da CA pubblica. La modalità
-"Full" cifra il tratto Cloudflare→VPS accettando anche certificati self-signed.
-"Full Strict" richiederebbe un certificato valido sul server.
+### TLS all'origine, per Full (strict)
+
+In **Full** e in **Full (strict)** Cloudflare parla con l'origine sulla **443**,
+non sulla 80. La differenza è solo che strict verifica anche il certificato.
+Con la sola 80 aperta il risultato è un **522** — che non è un errore di
+certificato, è Cloudflare che non riesce proprio a connettersi.
+
+Il certificato è un **Origin CA di Cloudflare**, non Let's Encrypt. Non è una
+scorciatoia: l'NSG di Azure lascia entrare solo gli indirizzi di Cloudflare,
+quindi la validazione HTTP-01 di Let's Encrypt non arriverebbe mai
+all'origine. L'Origin CA è firmato da una CA che vale *solo* fra Cloudflare e
+noi, dura quindici anni e non va rinnovato. Per questo il Caddyfile ha
+`auto_https off`: senza, Caddy tenterebbe certificati pubblici a ogni avvio e
+fallirebbe in ciclo.
+
+**Dove stanno le chiavi:** `/etc/busroma/certs` sull'host, montata in sola
+lettura nel container. Fuori dalla cartella del progetto di proposito — il
+webhook fa `git pull` e `reset`, e una chiave privata versionata è una chiave
+che prima o poi finisce in un commit.
+
+**Come si rifà da zero:**
+
+1. Cloudflare → zona → SSL/TLS → **Origin Server** → *Create Certificate*.
+   Hostname `busaroma.it` e `*.busaroma.it`, validità 15 anni. La chiave
+   privata la mostra una volta sola.
+2. Sul VPS, salvarli con `sudo tee` in `/etc/busroma/certs/busaroma.pem` e
+   `.key`; chiave a `600`, certificato a `644`.
+3. `git pull` e `docker compose up -d --force-recreate caddy`.
+4. Azure NSG: aprire anche la **443** dai range di Cloudflare
+   (<https://www.cloudflare.com/ips/>), come è già fatto per la 80.
+5. Cloudflare → SSL/TLS → **Full (strict)**.
+
+**Passo successivo, quando si vuole:** *Authenticated Origin Pulls*. Cloudflare
+presenta un certificato client e Caddy rifiuta chiunque non ce l'abbia: a quel
+punto l'origine è chiusa a chiave anche se l'NSG un giorno venisse allargato.
+
+**Attenzione a `bus.disagio.dev`:** quella zona sta su **Flexible**, e si vede
+dal fatto che l'origine ascolta solo sulla 80 e il sito risponde lo stesso.
+Vuol dire che il tratto Cloudflare→VPS viaggia in chiaro. Resta com'è finché
+le app installate puntano lì; per portarla a strict servono un suo Origin CA e
+un blocco `https://` suo nel Caddyfile.
 
 ### Chi blocca il traffico non-Cloudflare (leggere prima di toccare il firewall)
 

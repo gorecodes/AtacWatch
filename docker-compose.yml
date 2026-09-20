@@ -89,9 +89,17 @@ services:
     logging: *log
     ports:
       - "80:80"
-      # 443 non esposta: TLS è gestito da Cloudflare, non da Caddy.
+      # La 443 serve per mettere Cloudflare su Full (strict): in quella
+      # modalità l'edge parla con l'origine in TLS e ne verifica il
+      # certificato. Con la sola 80 aperta, Cloudflare non riesce nemmeno a
+      # connettersi e risponde 522.
+      - "443:443"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificati di origine, SULL'HOST e non nel repository: il webhook fa
+      # git pull e reset, e una chiave privata versionata è una chiave che
+      # prima o poi finisce in un commit.
+      - /etc/busroma/certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
     extra_hosts:

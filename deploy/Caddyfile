@@ -1,13 +1,52 @@
-# Cloudflare gestisce TLS verso gli utenti (proxy arancione).
-# Caddy serve HTTP puro sulla porta 80: Cloudflare fa da frontend HTTPS.
+# TLS verso Cloudflare: la 443 con un certificato della CA di origine.
 #
-# Nel dashboard Cloudflare:
-#   SSL/TLS → Overview → modalità "Full"
-#   (Full = cifra il tratto Cloudflare→VPS anche con cert auto-firmato;
-#    NON usare "Flexible" che lascia il tratto verso il VPS in chiaro)
-:80 {
+# PERCHE' NON LET'S ENCRYPT. Caddy saprebbe prendersi un certificato da solo,
+# ma non qui: l'NSG di Azure lascia entrare solo gli indirizzi di Cloudflare,
+# quindi la validazione HTTP-01 di Let's Encrypt non arriverebbe mai
+# all'origine. Il certificato di origine di Cloudflare risolve il problema
+# alla radice - lo firma una CA che vale SOLO fra Cloudflare e noi, dura
+# quindici anni e non va rinnovato.
+#
+# Per questo `auto_https off`: senza, Caddy tenterebbe di prendere
+# certificati veri a ogni avvio, fallirebbe, e riproverebbe per sempre.
+{
+	auto_https off
+}
+
+# Il pezzo comune ai siti: l'app, e il webhook di deploy che gira sull'host.
+(comune) {
 	handle /hooks/* {
 		reverse_proxy host.docker.internal:9000
 	}
 	reverse_proxy app:3000
+}
+
+# busaroma.it in HTTPS, per poter mettere Cloudflare su Full (strict).
+#
+# Il certificato e la chiave stanno in /etc/busroma/certs SULL'HOST, fuori
+# dalla cartella del progetto: il webhook fa git pull e reset, e una chiave
+# privata dentro un repository e' una chiave che prima o poi finisce in un
+# commit.
+https://busaroma.it, https://www.busaroma.it {
+	tls /etc/caddy/certs/busaroma.pem /etc/caddy/certs/busaroma.key
+	import comune
+}
+
+# Chi arriva in chiaro viene mandato su HTTPS. Vale anche per la 80 di
+# busaroma.it, che dopo il passaggio a strict non dovrebbe piu' ricevere
+# niente da Cloudflare ma non deve morire in silenzio se succede.
+http://busaroma.it, http://www.busaroma.it {
+	redir https://{host}{uri} permanent
+}
+
+# TUTTO IL RESTO SULLA 80, COME PRIMA.
+#
+# bus.disagio.dev continua a funzionare esattamente come adesso, senza
+# toccare niente: quella zona e' su Flexible (si vede dal fatto che l'origine
+# ascolta solo sulla 80 e il sito risponde), e le app gia' installate puntano
+# li'. Quando anche quel dominio avra' il suo certificato di origine gli si
+# dara' un blocco https come sopra, e allora si potra' passare a strict pure
+# quella zona.
+:80 {
+	import comune
 }
