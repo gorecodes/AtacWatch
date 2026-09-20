@@ -54,12 +54,35 @@ docker compose run --rm migrate
 echo "[deploy] avvio..."
 docker compose up -d --remove-orphans
 
-# Verifica finale: il guasto ricorrente è stato il sito giù senza che il deploy
-# se ne accorgesse, quindi qui si controlla e si fallisce a voce alta.
+# VERIFICA FINALE, E DEVE ACCORGERSI ANCHE DI UN CONTAINER CHE CICLA.
+#
+# La versione precedente guardava solo `ps --status running`, e non bastava:
+# un container in crash loop alterna "running" e "restarting" ogni paio di
+# secondi, quindi il controllo lo beccava vivo per caso. È successo — un
+# deploy ha stampato "done" con Caddy che moriva e ripartiva in continuazione,
+# cioè con il sito giù.
+#
+# Ora si guardano due cose: lo stato, e da QUANTO il container è partito. Uno
+# che cicla è ripartito pochi secondi fa, sempre.
+echo "[deploy] verifica..."
+sleep 10
 for s in db app caddy worker; do
-  if [ -z "$(docker compose ps --status running -q "$s")" ]; then
-    echo "[deploy] ERRORE: il servizio $s non è in esecuzione"
+  cid="$(docker compose ps -q "$s" || true)"
+  if [ -z "$cid" ]; then
+    echo "[deploy] ERRORE: il servizio $s non esiste"
     docker compose ps
+    exit 1
+  fi
+  stato="$(docker inspect -f '{{.State.Status}}' "$cid")"
+  if [ "$stato" != "running" ]; then
+    echo "[deploy] ERRORE: il servizio $s è in stato '$stato'"
+    docker compose logs --tail=30 --no-color "$s"
+    exit 1
+  fi
+  eta=$(( $(date +%s) - $(date -d "$(docker inspect -f '{{.State.StartedAt}}' "$cid")" +%s) ))
+  if [ "$eta" -lt 5 ]; then
+    echo "[deploy] ERRORE: il servizio $s è ripartito $eta secondi fa: sta ciclando"
+    docker compose logs --tail=30 --no-color "$s"
     exit 1
   fi
 done
@@ -111,7 +134,14 @@ if [ "$LIBERI" -lt "$SOGLIA" ]; then
   docker image prune -f || true
 fi
 
-df -h /
-docker system df
+# Queste due righe sono SOLO informative, e non devono poter far fallire il
+# deploy. `docker system df` è morto con "failed to calculate image disk
+# usage: NotFound: snapshot ... does not exist" - un'incoerenza dello store
+# di containerd - e con `set -e` si è portato dietro l'intero deploy: pull,
+# build, migration e avvio erano andati tutti bene, ma il webhook ha
+# registrato "exit status 1". Un deploy riuscito che si dichiara fallito fa
+# perdere tempo esattamente quando si sta cercando un guasto vero.
+df -h / || true
+docker system df || echo "[deploy] ATTENZIONE: docker system df non risponde (store containerd incoerente?)"
 
 echo "[deploy] done"
