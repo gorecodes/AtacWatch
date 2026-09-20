@@ -212,6 +212,46 @@ ogni push. Con la glob, se il certificato non c'è il file non c'è, e
    (<https://www.cloudflare.com/ips/>), come è già fatto per la 80.
 6. Cloudflare → SSL/TLS → **Full (strict)**.
 
+**Certificato autofirmato, quando basta.** Se una zona sta su *Full* e non su
+*Full (strict)*, Cloudflare cifra ma non verifica: un autofirmato è
+sufficiente, e resta comunque meglio di *Flexible*, dove il tratto verso
+l'origine è in chiaro. È il caso di `bus.disagio.dev`:
+
+```bash
+sudo openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+  -keyout /etc/busroma/certs/disagio.key \
+  -out /etc/busroma/certs/disagio.pem \
+  -subj '/CN=bus.disagio.dev' -addext 'subjectAltName=DNS:bus.disagio.dev'
+sudo chmod 600 /etc/busroma/certs/disagio.key
+sudo cp deploy/siti-esempio/disagio.caddy /etc/busroma/siti/disagio.caddy
+docker compose up -d --force-recreate caddy
+```
+
+**`tls internal` non funziona qui.** Sembra la scelta ovvia per un
+autofirmato, ma il Caddyfile ha `auto_https off` e quello spegne *tutta*
+l'automazione dei certificati, CA interna compresa: Caddy non ne genera
+nessuno e l'handshake fallisce. Il file esplicito è l'unica forma compatibile
+con quella impostazione — che a sua volta serve a impedire a Caddy di tentare
+Let's Encrypt, cosa che con l'NSG che filtra non potrebbe mai riuscire.
+
+**Perché la 443 di un dominio rompe l'altro.** Con un solo blocco `https://`
+Caddy presenta quel certificato a *qualunque* richiesta TLS: un secondo
+dominio che arriva sulla 443 riceve il certificato sbagliato e fallisce
+l'handshake (Cloudflare mostra *SSL handshake failed*, errore 525). Ogni
+dominio che arriva in TLS vuole il suo blocco e il suo certificato.
+
+### Cosa sopravvive a un deploy
+
+| Cosa | Dove | Sopravvive? |
+|---|---|---|
+| Certificati e chiavi | `/etc/busroma/certs/` | Sì, fuori dal repository |
+| Blocchi dei siti TLS | `/etc/busroma/siti/` | Sì, fuori dal repository |
+| `Caddyfile`, `docker-compose.yml` | repository | Sì, vengono da `origin/main` |
+
+Il webhook fa `git reset --hard`, che tocca **solo** la cartella del
+repository. Per questo le chiavi stanno altrove: non è solo igiene, è ciò che
+le rende persistenti.
+
 **Passo successivo, quando si vuole:** *Authenticated Origin Pulls*. Cloudflare
 presenta un certificato client e Caddy rifiuta chiunque non ce l'abbia: a quel
 punto l'origine è chiusa a chiave anche se l'NSG un giorno venisse allargato.

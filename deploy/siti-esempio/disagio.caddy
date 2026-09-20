@@ -1,0 +1,23 @@
+# ESEMPIO — questo file NON viene letto da Caddy.
+#
+# Copia di quello che sta sul VPS in /etc/busroma/siti/disagio.caddy.
+#
+# Il certificato qui e' AUTOFIRMATO, generato con openssl (vedi
+# OPERATIONS.md §7), e basta perche' la zona disagio.dev sta su Full: in
+# Full Cloudflare cifra il tratto verso l'origine ma NON verifica il
+# certificato. Prima era su Flexible e quel tratto viaggiava in chiaro,
+# quindi anche cosi' e' un passo avanti.
+#
+# Per passare quella zona a Full (strict) basta sostituire i due file con un
+# Origin CA di Cloudflare: stesso percorso, nessun'altra modifica.
+#
+# NOTA: non si puo' usare `tls internal`. Il Caddyfile ha `auto_https off`,
+# che spegne tutta l'automazione dei certificati - inclusa la CA interna -
+# quindi Caddy non ne genererebbe nessuno e l'handshake fallirebbe. Il file
+# esplicito e' l'unica forma che funziona con quella impostazione, che a sua
+# volta serve a impedire a Caddy di tentare Let's Encrypt, cosa che non
+# potrebbe riuscire con l'NSG che filtra.
+https://bus.disagio.dev {
+	tls /etc/caddy/certs/disagio.pem /etc/caddy/certs/disagio.key
+	import comune
+}
